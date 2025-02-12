@@ -9,101 +9,10 @@
  */
 self["webpackHotUpdate_N_E"]("webpack",{},
 /******/ function(__webpack_require__) { // webpackRuntimeModules
-/******/ /* webpack/runtime/compat get default export */
-/******/ !function() {
-/******/ 	// getDefaultExport function for compatibility with non-harmony modules
-/******/ 	__webpack_require__.n = function(module) {
-/******/ 		var getter = module && module.__esModule ?
-/******/ 			function() { return module['default']; } :
-/******/ 			function() { return module; };
-/******/ 		__webpack_require__.d(getter, { a: getter });
-/******/ 		return getter;
-/******/ 	};
-/******/ }();
-/******/ 
-/******/ /* webpack/runtime/define property getters */
-/******/ !function() {
-/******/ 	// define getter functions for harmony exports
-/******/ 	__webpack_require__.d = function(exports, definition) {
-/******/ 		for(var key in definition) {
-/******/ 			if(__webpack_require__.o(definition, key) && !__webpack_require__.o(exports, key)) {
-/******/ 				Object.defineProperty(exports, key, { enumerable: true, get: definition[key] });
-/******/ 			}
-/******/ 		}
-/******/ 	};
-/******/ }();
-/******/ 
-/******/ /* webpack/runtime/ensure chunk */
-/******/ !function() {
-/******/ 	__webpack_require__.f = {};
-/******/ 	// This file contains only the entry chunk.
-/******/ 	// The chunk loading function for additional chunks
-/******/ 	__webpack_require__.e = function(chunkId) {
-/******/ 		return Promise.all(Object.keys(__webpack_require__.f).reduce(function(promises, key) {
-/******/ 			__webpack_require__.f[key](chunkId, promises);
-/******/ 			return promises;
-/******/ 		}, []));
-/******/ 	};
-/******/ }();
-/******/ 
-/******/ /* webpack/runtime/get javascript chunk filename */
-/******/ !function() {
-/******/ 	// This function allow to reference async chunks
-/******/ 	__webpack_require__.u = function(chunkId) {
-/******/ 		// return url for filenames based on template
-/******/ 		return "static/chunks/" + chunkId + ".js";
-/******/ 	};
-/******/ }();
-/******/ 
 /******/ /* webpack/runtime/getFullHash */
 /******/ !function() {
-/******/ 	__webpack_require__.h = function() { return "4b36f16e9806507b"; }
+/******/ 	__webpack_require__.h = function() { return "e08896a7bec8cf0b"; }
 /******/ }();
-/******/ 
-/******/ /* webpack/runtime/global */
-/******/ !function() {
-/******/ 	__webpack_require__.g = (function() {
-/******/ 		if (typeof globalThis === 'object') return globalThis;
-/******/ 		try {
-/******/ 			return this || new Function('return this')();
-/******/ 		} catch (e) {
-/******/ 			if (typeof window === 'object') return window;
-/******/ 		}
-/******/ 	})();
-/******/ }();
-/******/ 
-/******/ /* webpack/runtime/make namespace object */
-/******/ !function() {
-/******/ 	// define __esModule on exports
-/******/ 	__webpack_require__.r = function(exports) {
-/******/ 		if(typeof Symbol !== 'undefined' && Symbol.toStringTag) {
-/******/ 			Object.defineProperty(exports, Symbol.toStringTag, { value: 'Module' });
-/******/ 		}
-/******/ 		Object.defineProperty(exports, '__esModule', { value: true });
-/******/ 	};
-/******/ }();
-/******/ 
-/******/ /* webpack/runtime/node module decorator */
-/******/ !function() {
-/******/ 	__webpack_require__.nmd = function(module) {
-/******/ 		module.paths = [];
-/******/ 		if (!module.children) module.children = [];
-/******/ 		return module;
-/******/ 	};
-/******/ }();
-/******/ 
-/******/ /* webpack/runtime/compat */
-/******/ 
-/******/ 
-/******/ // noop fns to prevent runtime errors during initialization
-/******/ if (typeof self !== "undefined") {
-/******/ 	self.$RefreshReg$ = function () {};
-/******/ 	self.$RefreshSig$ = function () {
-/******/ 		return function (type) {
-/******/ 			return type;
-/******/ 		};
-/******/ 	};
-/******/ }
 /******/ 
 /******/ /* webpack/runtime/jsonp chunk loading */
 /******/ !function() {
@@ -116,44 +25,7 @@ self["webpackHotUpdate_N_E"]("webpack",{},
 /******/ 		"webpack": 0
 /******/ 	};
 /******/ 	
-/******/ 	__webpack_require__.f.j = function(chunkId, promises) {
-/******/ 			// JSONP chunk loading for javascript
-/******/ 			var installedChunkData = __webpack_require__.o(installedChunks, chunkId) ? installedChunks[chunkId] : undefined;
-/******/ 			if(installedChunkData !== 0) { // 0 means "already installed".
-/******/ 	
-/******/ 				// a Promise means "currently loading".
-/******/ 				if(installedChunkData) {
-/******/ 					promises.push(installedChunkData[2]);
-/******/ 				} else {
-/******/ 					if("webpack" != chunkId) {
-/******/ 						// setup Promise in chunk cache
-/******/ 						var promise = new Promise(function(resolve, reject) { installedChunkData = installedChunks[chunkId] = [resolve, reject]; });
-/******/ 						promises.push(installedChunkData[2] = promise);
-/******/ 	
-/******/ 						// start chunk loading
-/******/ 						var url = __webpack_require__.p + __webpack_require__.u(chunkId);
-/******/ 						// create error before stack unwound to get useful stacktrace later
-/******/ 						var error = new Error();
-/******/ 						var loadingEnded = function(event) {
-/******/ 							if(__webpack_require__.o(installedChunks, chunkId)) {
-/******/ 								installedChunkData = installedChunks[chunkId];
-/******/ 								if(installedChunkData !== 0) installedChunks[chunkId] = undefined;
-/******/ 								if(installedChunkData) {
-/******/ 									var errorType = event && (event.type === 'load' ? 'missing' : event.type);
-/******/ 									var realSrc = event && event.target && event.target.src;
-/******/ 									error.message = 'Loading chunk ' + chunkId + ' failed.\n(' + errorType + ': ' + realSrc + ')';
-/******/ 									error.name = 'ChunkLoadError';
-/******/ 									error.type = errorType;
-/******/ 									error.request = realSrc;
-/******/ 									installedChunkData[1](error);
-/******/ 								}
-/******/ 							}
-/******/ 						};
-/******/ 						__webpack_require__.l(url, loadingEnded, "chunk-" + chunkId, chunkId);
-/******/ 					} else installedChunks[chunkId] = 0;
-/******/ 				}
-/******/ 			}
-/******/ 	};
+/******/ 	// no chunk on demand loading
 /******/ 	
 /******/ 	// no prefetching
 /******/ 	
@@ -684,11 +556,6 @@ self["webpackHotUpdate_N_E"]("webpack",{},
 /******/ 	var chunkLoadingGlobal = self["webpackChunk_N_E"] = self["webpackChunk_N_E"] || [];
 /******/ 	chunkLoadingGlobal.forEach(webpackJsonpCallback.bind(null, 0));
 /******/ 	chunkLoadingGlobal.push = webpackJsonpCallback.bind(null, chunkLoadingGlobal.push.bind(chunkLoadingGlobal));
-/******/ }();
-/******/ 
-/******/ /* webpack/runtime/nonce */
-/******/ !function() {
-/******/ 	__webpack_require__.nc = undefined;
 /******/ }();
 /******/ 
 /******/ }
