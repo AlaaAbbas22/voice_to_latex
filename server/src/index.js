@@ -17,13 +17,25 @@ const app = express();
 const server = http.createServer(app);
 const io = socketIo(server, {
     cors: {
-      origin: "http://localhost:3000",
+      origin: true, // This will allow all origins but respect the Origin header
       credentials: true,
     }
-  });
+});
 
 app.use(cors({
-    origin: "http://localhost:3000", // Replace with your frontend domain
+    origin: function(origin, callback) {
+        // Allow requests with no origin (like mobile apps or curl requests)
+        if(!origin) return callback(null, true);
+        
+        // Allow Chrome extension and your frontend domains
+        if(origin.startsWith('chrome-extension://') || 
+           origin === 'http://localhost:3000' ||
+           origin === 'http://localhost:5173' || true) {
+            return callback(null, true);
+        }
+        
+        callback(new Error('Not allowed by CORS'));
+    },
     credentials: true
 }));
 app.use(express.json());
@@ -38,7 +50,8 @@ const sessionMiddleware = session({
     resave: true,
     saveUninitialized: true,
     store: MongoStore.create({ mongoUrl: process.env.mongoURI }),
-    cookie: { maxAge: 3600000000, httpOnly: false } // 1 hour expiry
+    cookie: { maxAge: 3600000000, httpOnly: false } // , sameSite: "none", secure:true
+    //  cookie: { maxAge: 3600000000, httpOnly: false, sameSite: "none", secure: true } 
   });
   
 app.use(sessionMiddleware);

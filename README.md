@@ -1,27 +1,79 @@
-# Latex Voice Editor
+# Vatex - Voice to LaTeX Web Application
 
-Collaborative Text Editor is an open-source text editor that allows you to collaborate with others. It allows users to identify written markdown in real-time. No DB is required to run this.
+Vatex is a collaborative web application that converts voice and natural language to LaTeX. It provides real-time collaboration features and instant LaTeX previews.
 
-![Homepage image](./public/view.png "Homepage")
-
-The server is written in NodeJS (Express) and the frontend is NextJS.
+## Features
+- Voice to LaTeX conversion
+- Natural language to LaTeX translation
+- Real-time collaborative editing
+- Live LaTeX preview
+- User authentication and room management
 
 ## Setup
 
-### Frontend
-
+### Backend Setup
+1. Navigate to the server directory:
 ```bash
-npm install && npm run build && npm run start
+cd server
 ```
 
-### Backend
-
-You need an API Key for the LLM
-
+2. Install dependencies:
 ```bash
-npm install && npm run build && npm run start
+npm install
 ```
 
-## License
+3. Create a .env file in the server directory with the following:
+```
+PORT=5000
+MONGODB_URI=your_mongodb_connection_string
+SESSION_SECRET=your_session_secret
+GROQ_API_KEY=your_groq_api_key
+```
 
-All code is under MIT license.
+4. Start the server:
+```bash
+node .\src\index.js
+```
+
+### Frontend Setup
+1. Navigate to the frontend directory:
+```bash
+cd frontend
+```
+
+2. Install dependencies (Note: Force flag is required due to React version compatibility):
+```bash
+npm install --force
+```
+
+3. Create a .env.local file in the frontend directory:
+```
+NEXT_PUBLIC_BASE_URL=http://localhost:5000
+```
+
+4. Start the development server:
+```bash
+npm run dev
+```
+
+
+## Usage
+
+
+- Access the application at http://localhost:3000
+- Create an account or log in
+- Create or join a room to start collaborating
+- Use voice input or type natural language to generate LaTeX
+
+
+## Technology Stack
+
+- Frontend: Next.js, React
+- Backend: Node.js, Express
+- Real-time: Socket.IO
+- Database: MongoDB
+- LLM Integration: Groq API
+
+## Note
+
+Make sure to have all the necessary API keys and environment variables set up before running the application.
