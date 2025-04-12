@@ -44,12 +44,13 @@ app.use(cookieParser());
 // Connect to MongoDB
 connectDB();
 
+const sessionStore = MongoStore.create({ mongoUrl: process.env.mongoURI })
 // Session middleware
 const sessionMiddleware = session({
-    secret: "your-secret-key",
+    secret: "A",
     resave: true,
     saveUninitialized: true,
-    store: MongoStore.create({ mongoUrl: process.env.mongoURI }),
+    store: sessionStore,
     cookie: { maxAge: 3600000000, httpOnly: false } // , sameSite: "none", secure:true
     //  cookie: { maxAge: 3600000000, httpOnly: false, sameSite: "none", secure: true } 
   });
@@ -86,11 +87,13 @@ app.post("/login", async (req, res) => {
   if (!user || !(await bcrypt.compare(password, user.password))) {
     return res.status(401).json({ error: "Invalid credentials" });
   }
-
+  // req.session.destroy((err) => {});
+  
   req.session.userId = user._id;
   req.session.username = user.username;
   req.session.save();
-
+  console.log(req.session.id)
+  // res.cookie("connect.sid", req.session.id, { httpOnly: false, expires: new Date(Date.now() + 3600000) });
   res.json({ message: "Login successful" });
 });
 
@@ -228,71 +231,136 @@ app.get("/rooms/:roomId/role", requireAuth, async (req, res) => {
 });
 
 io.on("connection", async (socket) => {
+    console.log("A connection started")
     const session = socket.handshake.session;
+    
+    // Helper function to get current session
+    const getCurrentSession = () => {
+        return socket.session || session;
+    };
 
     // Authenticate session for WebSocket
-    socket.on("authenticate", async () => {
-        console.log("authenticate event received with sessionId:", session.userId);
+    socket.on("authenticate", async (sessionId) => {
+        let currentSession = session;
         
-        if (!session ) {
-            console.log("Invalid or expired session for sessionId:", sessionId);
+        // If a sessionId is provided, try to retrieve the session from the database
+        if (sessionId) {
+            try {                
+                const storedSession = await new Promise((resolve, reject) => {
+                    sessionStore.get(sessionId.slice(4, 36), (err, session) => {
+                        if (err) reject(err);
+                        else resolve(session);
+                    });
+                });
+                
+                if (storedSession && storedSession.userId) {
+                    currentSession = storedSession;
+                    console.log("Retrieved session from database with ID:", sessionId);
+                }
+            } catch (error) {
+                console.error("Error retrieving session:", error);
+            }
+        }
+        console.log("authenticate event received with sessionId:", currentSession?.userId);
+        
+        if (!currentSession || !currentSession.userId) {
+            console.log("Invalid or expired session");
             socket.emit("auth_error", "Invalid or expired session");
             return;
         }
-        console.log("User authenticated with sessionId:", session.userId);
         
+        console.log("User authenticated with userId:", currentSession.userId);
         
+        // Store the session data on the socket for future use
+        socket.session = currentSession;
 
-        socket.emit("authenticated", { username: session.username });
-        console.log(`${session.username} authenticated with socket ID: ${socket.id}`);
+        socket.emit("authenticated", { username: currentSession.username });
+        console.log(`${currentSession.username} authenticated with socket ID: ${socket.id}`);
     });
 
     // Send Text (Only authenticated users can send)
-    socket.on("send-text", async (data, room) => {
+    socket.on("send-text", async (data, room, sessionId) => {
+        // Try to get session from sessionId if provided
+        if (sessionId) {
+            await updateSessionFromId(sessionId);
+        }
+        
+        const currentSession = getCurrentSession();
+        if (!currentSession || !currentSession.userId) {
+            return socket.emit("error", "Not authenticated");
+        }
+        
         let roomDoc = await Room.findOne({ name: room });
-        if (!roomDoc || !roomDoc.editors.includes(session.userId)) return socket.emit("error", "Error happened");
+        if (!roomDoc || !roomDoc.editors.some(id => id.equals(currentSession.userId))) {
+            return socket.emit("error", "You don't have permission to edit this room");
+        }
         
-        
-
-
-        socket.broadcast.to(room).emit("receive-original", data, session.username);
+        socket.broadcast.to(room).emit("receive-original", data, currentSession.username);
         const processedText = await llm(data);
         socket.broadcast.to(room).emit("receive-text", processedText);
 
         roomDoc.latex = processedText;
         roomDoc.content = data;
         await roomDoc.save();
-
-        
     });
 
     // Join Room 
-    socket.on("join-room", async (roomName) => {
-        if (!session.username) return;
+    socket.on("join-room", async (roomName, sessionId) => {
+        // Try to get session from sessionId if provided
+        if (sessionId) {
+            await updateSessionFromId(sessionId);
+        }
+        
+        const currentSession = getCurrentSession();
+        if (!currentSession || !currentSession.username) {
+            return socket.emit("error", "Not authenticated");
+        }
     
         let room = await Room.findOne({ name: roomName });
         if (!room) {
             console.log(`Room ${roomName} does not exist`);
-            return socket.emit("error", "Room does not exist");}
+            return socket.emit("error", "Room does not exist");
+        }
     
         // Check if user is an editor or viewer
-        const isEditor = room.editors.some((id) => id.equals(session.userId));
-        const isViewer = room.viewers.some((id) => id.equals(session.userId));
+        const isEditor = room.editors.some((id) => id.equals(currentSession.userId));
+        const isViewer = room.viewers.some((id) => id.equals(currentSession.userId));
     
         if (!isEditor && !isViewer) {
-          return socket.emit("error", "You don't have access to this room");
+            return socket.emit("error", "You don't have access to this room");
         }
     
         socket.join(roomName);
-        console.log(`${session.username} joined room: ${roomName}`);
+        console.log(`${currentSession.username} joined room: ${roomName}`);
     
         socket.emit("receive-original", room.content, "");
         socket.emit("receive-text", room.latex);
-      });
+    });
+
+    // Helper function to update session from sessionId
+    async function updateSessionFromId(sessionId) {
+        try {
+            const storedSession = await new Promise((resolve, reject) => {
+                sessionStore.get(sessionId.slice(4, 36), (err, session) => {
+                    if (err) reject(err);
+                    else resolve(session);
+                });
+            });
+            
+            if (storedSession && storedSession.userId) {
+                socket.session = storedSession;
+                console.log("Updated session from ID:", sessionId);
+            }
+        } catch (error) {
+            console.error("Error retrieving session:", error);
+        }
+    }
 
     // Handle Disconnect
     socket.on("disconnect", (reason) => {
-        console.log(`User ${socket.username || "Unknown"} disconnected:`, reason);
+        const currentSession = getCurrentSession();
+        const username = currentSession?.username || "Unknown";
+        console.log(`User ${username} disconnected:`, reason);
     });
 });
 
