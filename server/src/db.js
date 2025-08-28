@@ -1,3 +1,9 @@
+/**
+ * Database models and connection
+ *
+ * This file contains the MongoDB connection setup and the Mongoose models for the application.
+ */
+
 const mongoose = require("mongoose");
 require("dotenv").config();
 
@@ -8,7 +14,6 @@ const connectDB = async () => {
       useNewUrlParser: true,
       useUnifiedTopology: true,
     });
-    console.log("MongoDB connected");
   } catch (error) {
     console.error("MongoDB connection error:", error);
     process.exit(1);
@@ -38,7 +43,11 @@ const Session = mongoose.model("Session", sessionSchema);
 // Room Schema (Tracks who created it, editors, and viewers)
 const roomSchema = new mongoose.Schema({
   name: { type: String, unique: true, required: true },
-  createdBy: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+  createdBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User",
+    required: true,
+  },
   content: { type: String, default: "" },
   latex: { type: String, default: "" },
   editors: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
