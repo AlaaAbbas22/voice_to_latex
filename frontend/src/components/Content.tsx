@@ -1,7 +1,37 @@
-import 'regenerator-runtime/runtime';
-import { Dispatch, SetStateAction, useEffect, useRef, useState, useCallback } from 'react';
-import LatexDisplayer from './Latex';
-import SpeechRecognition, { useSpeechRecognition } from 'react-speech-recognition';
+import "regenerator-runtime/runtime";
+import {
+  Dispatch,
+  SetStateAction,
+  useEffect,
+  useRef,
+  useState,
+  useCallback,
+} from "react";
+import LatexDisplayer from "./Latex";
+import SpeechRecognition, {
+  useSpeechRecognition,
+} from "react-speech-recognition";
+import { motion } from "framer-motion";
+import { Textarea } from "./ui/textarea";
+import { Button } from "./ui/button";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "./ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
+import {
+  Mic,
+  MicOff,
+  Save,
+  Copy,
+  RefreshCw,
+  BookOpen,
+  Download,
+} from "lucide-react";
+import { toast } from "react-hot-toast";
 
 interface Props {
   text: string;
@@ -10,29 +40,46 @@ interface Props {
   router: any;
   latex: string;
   role: string;
+  roomName: string;
 }
 
-export default function Content({ text, setText, socket, router, latex, role }: Props) {
-  const ref = useRef(null);
+export default function Content({
+  text,
+  setText,
+  socket,
+  router,
+  latex,
+  role,
+  roomName,
+}: Props) {
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [recording, setRecording] = useState(false);
-  const { transcript, resetTranscript } = useSpeechRecognition();
+  const [isSaving, setIsSaving] = useState(false);
+  const { transcript, resetTranscript, browserSupportsSpeechRecognition } =
+    useSpeechRecognition();
 
   useEffect(() => {
     if (transcript) {
-      setText((prev) => prev + ' ' + transcript);
+      setText((prev) => prev + " " + transcript);
       resetTranscript();
     }
-  }, [transcript]);
+  }, [transcript, setText, resetTranscript]);
 
   const startRecording = () => {
+    if (!browserSupportsSpeechRecognition) {
+      toast.error("Your browser doesn't support speech recognition");
+      return;
+    }
     setRecording(true);
     SpeechRecognition.startListening({ continuous: true });
+    toast.success("Voice recording started");
   };
 
   const stopRecording = () => {
     setRecording(false);
     SpeechRecognition.stopListening();
     resetTranscript();
+    toast.success("Voice recording stopped");
   };
 
   // Debounced socket emission
@@ -42,35 +89,269 @@ export default function Content({ text, setText, socket, router, latex, role }: 
       return (newText: string) => {
         clearTimeout(timeout);
         timeout = setTimeout(() => {
-          socket.emit('send-text', newText, router.asPath.split('#')[1]);
-        }, 1000);
+          if (socket && socket.connected) {
+            socket.emit("send-text", newText, router.asPath.split("#")[1]);
+          }
+        }, 800);
       };
     })(),
-    [socket, router]
+    [socket, router],
   );
 
-  return (
-    <div ref={ref} className="h-full w-full p-4 bg-white shadow-lg rounded-lg">
-      {role === 'editor' && (
-        <>
-          <textarea
-            className="w-full h-64 border border-gray-300 rounded-lg p-2 text-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
-            value={text}
-            onChange={(e) => {
-              setText(e.target.value);
-              debouncedEmitText(e.target.value);
-            }}
-            placeholder="Start typing here..."
-          ></textarea>
-          <button 
-            onClick={recording ? stopRecording : startRecording} 
-            className={`mt-4 px-4 py-2 rounded text-white ${recording ? 'bg-red-500' : 'bg-blue-500'} hover:opacity-90 transition-all`}
+  const handleSave = async () => {
+    setIsSaving(true);
+    try {
+      // Simulate saving - replace with actual API call if needed
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+      toast.success("Document saved successfully");
+    } catch (error) {
+      toast.error("Failed to save document");
+      console.error("Save error:", error);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleCopyLatex = () => {
+    navigator.clipboard.writeText(latex);
+    toast.success("LaTeX code copied to clipboard");
+  };
+
+  const handleDownloadPDF = () => {
+    // This would be replaced with actual PDF generation and download
+    toast.success("PDF download started");
+  };
+
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1,
+        duration: 0.6,
+      },
+    },
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: { duration: 0.5 },
+    },
+  };
+
+  // Render different layouts based on user role
+  const renderContent = () => {
+    // For viewers, keep the tabbed interface
+    if (role !== "editor") {
+      return (
+        <Tabs defaultValue="preview" className="flex-1 flex flex-col">
+          <motion.div variants={itemVariants}>
+            <TabsList className="grid w-full grid-cols-1 mb-6">
+              <TabsTrigger value="preview" className="flex items-center gap-2">
+                <BookOpen className="h-4 w-4" />
+                Preview
+              </TabsTrigger>
+            </TabsList>
+          </motion.div>
+
+          <TabsContent
+            value="preview"
+            className="flex-1 flex flex-col space-y-4"
           >
-            {recording ? 'Stop Recording' : 'Start Recording'}
-          </button>
-        </>
-      )}
-      <LatexDisplayer latex={latex} />
-    </div>
+            <motion.div variants={itemVariants} className="flex-1">
+              <Card className="h-full flex flex-col">
+                <CardHeader className="pb-2">
+                  <CardTitle>LaTeX Preview</CardTitle>
+                  <CardDescription>
+                    Rendered output of LaTeX equations
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="flex-1 flex flex-col">
+                  <div className="flex-1 bg-white p-6 rounded-md border overflow-auto">
+                    <LatexDisplayer latex={latex} />
+                  </div>
+
+                  <div className="flex flex-wrap gap-2 mt-4">
+                    <motion.div
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                    >
+                      <Button
+                        onClick={handleCopyLatex}
+                        variant="outline"
+                        className="flex items-center gap-2"
+                      >
+                        <Copy className="h-4 w-4" />
+                        Copy LaTeX
+                      </Button>
+                    </motion.div>
+
+                    <motion.div
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                    >
+                      <Button
+                        onClick={handleDownloadPDF}
+                        variant="outline"
+                        className="flex items-center gap-2"
+                      >
+                        <Download className="h-4 w-4" />
+                        Download PDF
+                      </Button>
+                    </motion.div>
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
+          </TabsContent>
+        </Tabs>
+      );
+    }
+
+    // For editors, show split view with editor and preview side by side
+    return (
+      <div className="flex-1 flex flex-col md:flex-row gap-4">
+        <motion.div variants={itemVariants} className="flex-1 min-w-0">
+          <Card className="h-full flex flex-col">
+            <CardHeader className="pb-2">
+              <CardTitle>LaTeX Editor</CardTitle>
+              <CardDescription>
+                Type or use voice input to create LaTeX equations
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="flex-1 flex flex-col">
+              <Textarea
+                ref={textareaRef}
+                className="w-full flex-1 text-lg resize-none font-mono"
+                value={text}
+                onChange={(e) => {
+                  setText(e.target.value);
+                  debouncedEmitText(e.target.value);
+                }}
+                placeholder="Start typing here or use voice input..."
+              />
+
+              <div className="flex flex-wrap gap-2 mt-4">
+                <motion.div
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  <Button
+                    onClick={recording ? stopRecording : startRecording}
+                    variant={recording ? "destructive" : "default"}
+                    className="flex items-center gap-2"
+                  >
+                    {recording ? (
+                      <>
+                        <MicOff className="h-4 w-4" />
+                        Stop Recording
+                      </>
+                    ) : (
+                      <>
+                        <Mic className="h-4 w-4" />
+                        Start Voice Input
+                      </>
+                    )}
+                  </Button>
+                </motion.div>
+
+                <motion.div
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  <Button
+                    onClick={handleSave}
+                    variant="outline"
+                    className="flex items-center gap-2"
+                    disabled={isSaving}
+                  >
+                    {isSaving ? (
+                      <>
+                        <RefreshCw className="h-4 w-4 animate-spin" />
+                        Saving...
+                      </>
+                    ) : (
+                      <>
+                        <Save className="h-4 w-4" />
+                        Save
+                      </>
+                    )}
+                  </Button>
+                </motion.div>
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
+
+        <motion.div variants={itemVariants} className="flex-1 min-w-0">
+          <Card className="h-full flex flex-col">
+            <CardHeader className="pb-2">
+              <CardTitle>LaTeX Preview</CardTitle>
+              <CardDescription>
+                Rendered output of your LaTeX equations
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="flex-1 flex flex-col">
+              <div className="flex-1 bg-white p-6 rounded-md border overflow-auto">
+                <LatexDisplayer latex={latex} />
+              </div>
+
+              <div className="flex flex-wrap gap-2 mt-4">
+                <motion.div
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  <Button
+                    onClick={handleCopyLatex}
+                    variant="outline"
+                    className="flex items-center gap-2"
+                  >
+                    <Copy className="h-4 w-4" />
+                    Copy LaTeX
+                  </Button>
+                </motion.div>
+
+                <motion.div
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  <Button
+                    onClick={handleDownloadPDF}
+                    variant="outline"
+                    className="flex items-center gap-2"
+                  >
+                    <Download className="h-4 w-4" />
+                    Download PDF
+                  </Button>
+                </motion.div>
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
+      </div>
+    );
+  };
+
+  return (
+    <motion.div
+      className="h-full w-full flex flex-col"
+      initial="hidden"
+      animate="visible"
+      variants={containerVariants}
+    >
+      <motion.div variants={itemVariants} className="mb-6">
+        <h1 className="text-3xl font-bold text-gray-800">
+          {roomName || "Untitled Document"}
+        </h1>
+        <p className="text-gray-500">
+          You are in {role === "editor" ? "editing" : "viewing"} mode
+        </p>
+      </motion.div>
+
+      {renderContent()}
+    </motion.div>
   );
 }
