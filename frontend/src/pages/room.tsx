@@ -68,7 +68,9 @@ export default function Room() {
         );
 
         socketVariable.on("error", (errorMessage) => {
-          toast.error(errorMessage);
+          if (errorMessage !== "Disconnected from server") {
+            toast.error(errorMessage);
+          }
           router.push("/dashboard");
         });
 
@@ -131,8 +133,6 @@ export default function Room() {
       </Head>
 
       <div className="flex flex-col h-screen w-screen bg-gray-50 overflow-hidden">
-        <Toaster position="top-right" />
-
         <Header />
 
         <div className="flex flex-1 h-full w-full relative">
