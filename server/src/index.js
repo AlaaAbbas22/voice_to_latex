@@ -297,8 +297,12 @@ io.on("connection", async (socket) => {
         
         socket.broadcast.to(room).emit("receive-original", data, currentSession.username);
         const processedText = await llm(data);
+        // Get all sockets in the room
+        const sockets = await io.in(room).fetchSockets();
+        console.log(`Users in room ${room}:`, sockets.map(s => s.session?.username).filter(Boolean));
+        
         socket.broadcast.to(room).emit("receive-text", processedText);
-
+        socket.emit("receive-text", processedText);
         roomDoc.latex = processedText;
         roomDoc.content = data;
         await roomDoc.save();
@@ -372,6 +376,6 @@ server.listen(PORT, (err) => {
 
 // LLM Processing Function (No change here)
 async function llm(message) {
-    const response = await getGroqChatCompletion(`Convert this text to latex. Return the plain inner latex code only and make sure to break the line wherever it is broken in the input. ONLY CONVERT THE GIVEN TEXT TO LATEX AND DO NOT ADD ANYTHING TO THE CONTENT \n${message}`);
+    const response = await getGroqChatCompletion(`Convert this text to latex. Return the plain inner latex code only and make sure to break the line wherever it is broken in the input. ONLY CONVERT THE GIVEN TEXT TO LATEX AND DO NOT ADD ANYTHING TO THE CONTENT AND MAKE SURE THE LATEX IS SURROUNDED BY A SINGLE DOLLAR SIGN with a space before the dollar sign. \n${message}`);
     return response;
 }
