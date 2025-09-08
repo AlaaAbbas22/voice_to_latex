@@ -67,7 +67,7 @@ const roomsRouter = require("./routes/rooms");
 
 // Use routes
 app.use("/", authRouter);
-app.use("/rooms", roomsRouter);
+app.use("/", roomsRouter);
 
 // Setup Socket.IO connection
 setupSocketConnection(io, sessionStore);

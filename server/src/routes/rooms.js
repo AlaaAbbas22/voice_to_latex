@@ -9,7 +9,7 @@ const { User, Room } = require("../db");
 const { requireAuth } = require("./auth");
 
 // Create Room
-router.post("/", requireAuth, async (req, res) => {
+router.post("/rooms", requireAuth, async (req, res) => {
   const { roomName } = req.body;
 
   try {
@@ -33,7 +33,7 @@ router.post("/", requireAuth, async (req, res) => {
 router.get("/myrooms", requireAuth, async (req, res) => {
   console.log(req.session.id);
   const user = await User.findById(req.session.userId).populate(
-    "createdRooms editorRooms",
+    "createdRooms editorRooms"
   );
   const allRooms = [...user.createdRooms, ...user.editorRooms];
   res.json(allRooms);
@@ -42,15 +42,15 @@ router.get("/myrooms", requireAuth, async (req, res) => {
 // Get User's Viewable Rooms
 router.get("/viewablerooms", requireAuth, async (req, res) => {
   const user = await User.findById(req.session.userId).populate(
-    "viewableRooms",
+    "viewableRooms"
   );
   res.json(user.viewableRooms);
 });
 
 // Get Room Details
-router.get("/:roomId", requireAuth, async (req, res) => {
+router.get("/rooms/:roomId", requireAuth, async (req, res) => {
   const room = await Room.findOne({ name: req.params.roomId }).populate(
-    "createdBy editors viewers",
+    "createdBy editors viewers"
   );
 
   if (!room) return res.status(404).json({ error: "Room not found" });
@@ -77,7 +77,7 @@ router.get("/:roomId", requireAuth, async (req, res) => {
 });
 
 // Add Editor or Viewer to Room
-router.post("/:roomId/addUser", requireAuth, async (req, res) => {
+router.post("/rooms/:roomId/addUser", requireAuth, async (req, res) => {
   const { userId, role } = req.body;
   const room = await Room.findOne({ name: req.params.roomId });
   const user = await User.findOne({ username: userId });
@@ -113,7 +113,7 @@ router.post("/:roomId/addUser", requireAuth, async (req, res) => {
 });
 
 // Remove Editor or Viewer from Room
-router.post("/:roomId/removeUser", requireAuth, async (req, res) => {
+router.post("/rooms/:roomId/removeUser", requireAuth, async (req, res) => {
   const { userId, role } = req.body;
   const room = await Room.findOne({ name: req.params.roomId });
   const user = await User.findOne({ username: userId });
@@ -144,7 +144,7 @@ router.post("/:roomId/removeUser", requireAuth, async (req, res) => {
 });
 
 // Get User Role in Room
-router.get("/:roomId/role", requireAuth, async (req, res) => {
+router.get("/rooms/:roomId/role", requireAuth, async (req, res) => {
   const room = await Room.findOne({ name: req.params.roomId });
 
   if (!room) return res.status(404).json({ error: "Room not found" });
