@@ -39,7 +39,7 @@ const Dashboard = () => {
         ).data;
         setViewableRooms(viewables);
       } catch (error) {
-        console.error("Error fetching rooms:", error);
+        console.log(error);
       } finally {
         setIsLoading(false);
       }
