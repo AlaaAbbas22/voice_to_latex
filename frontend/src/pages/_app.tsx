@@ -43,15 +43,21 @@ export default function App({ Component, pageProps }: AppProps) {
         if (isAuthenticated && (currentPath === '/login' || currentPath === '/signup')) {
           router.push('/dashboard');
         }
-        // If user is not authenticated and on protected page, redirect to login
+        // If user is not authenticated and on protected page, redirect to login with callback URL
         else if (!isAuthenticated && (currentPath === '/dashboard' || currentPath.startsWith('/room'))) {
-          router.push('/login');
+          // Include hash fragment in callback URL
+          const fullUrl = window.location.pathname + window.location.search + window.location.hash;
+          const callbackUrl = encodeURIComponent(fullUrl);
+          router.push(`/login?callback=${callbackUrl}`);
         }
       } catch (error) {
-        // If auth check fails and user is on protected page, redirect to login
+        // If auth check fails and user is on protected page, redirect to login with callback URL
         const currentPath = router.pathname;
         if (currentPath === '/dashboard' || currentPath.startsWith('/room')) {
-          router.push('/login');
+          // Include hash fragment in callback URL
+          const fullUrl = window.location.pathname + window.location.search + window.location.hash;
+          const callbackUrl = encodeURIComponent(fullUrl);
+          router.push(`/login?callback=${callbackUrl}`);
         }
       }
     };
