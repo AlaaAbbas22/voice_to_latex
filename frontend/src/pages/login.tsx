@@ -1,20 +1,27 @@
 import React, { useState } from "react";
 import axios from "axios";
 import { setCookie } from "cookies-next";
+import { useRouter } from "next/router";
 
 const LoginPage: React.FC = () => {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const router = useRouter();
 
   const handleLogin = async (event: React.FormEvent) => {
     event.preventDefault();
     try {
+      // Get callback URL from query parameters
+      const { callback } = router.query;
+      const callbackUrl = callback && typeof callback === 'string' ? callback : null;
+
       const response = await axios.post(
         `${process.env.NEXT_PUBLIC_BASE_URL}/login`,
         {
           username,
           password,
+          callback: callbackUrl,
         },
         { withCredentials: true },
       );
@@ -22,7 +29,18 @@ const LoginPage: React.FC = () => {
 
       setCookie("username", username, { maxAge: 6000 * 60 * 24 * 7 });
 
-      window.location.href = "/";
+
+      // Use the redirect URL from the response or fallback to callback/default
+      const redirectUrl = callbackUrl || '/dashboard';
+
+      // Handle full URL with hash fragment
+      if (redirectUrl.includes('#')) {
+        // For URLs with hash fragments, use window.location for proper navigation
+        window.location.href = redirectUrl;
+      } else {
+        // For regular URLs, use router.push
+        router.push(redirectUrl);
+      }
     } catch (err) {
       setError("Invalid username or password");
     }
