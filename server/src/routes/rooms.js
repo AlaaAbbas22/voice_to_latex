@@ -31,7 +31,6 @@ router.post("/rooms", requireAuth, async (req, res) => {
 
 // Get User's Rooms (Created and Editor)
 router.get("/myrooms", requireAuth, async (req, res) => {
-  console.log(req.session.id);
   const user = await User.findById(req.session.userId).populate(
     "createdRooms editorRooms"
   );

@@ -37,7 +37,7 @@ app.use(
       callback(new Error("Not allowed by CORS"));
     },
     credentials: true,
-  }),
+  })
 );
 
 app.use(express.json());
@@ -51,10 +51,13 @@ const sessionStore = MongoStore.create({ mongoUrl: process.env.mongoURI });
 // Session middleware
 const sessionMiddleware = session({
   secret: "A",
-  resave: true,
-  saveUninitialized: true,
+  resave: false, // Changed to false to prevent unnecessary saves
+  saveUninitialized: false, // Changed to false to prevent empty sessions
   store: sessionStore,
-  cookie: { maxAge: 3600000000, httpOnly: false },
+  cookie: {
+    maxAge: 14 * 24 * 60 * 60 * 1000, // 14 days in milliseconds
+    httpOnly: false,
+  },
 });
 
 app.use(sessionMiddleware);
@@ -71,6 +74,20 @@ app.use("/", roomsRouter);
 
 // Setup Socket.IO connection
 setupSocketConnection(io, sessionStore);
+
+// Session cleanup utility
+const cleanupSessions = async () => {
+  try {
+    await sessionStore.clear();
+    console.log("Session cleanup completed");
+  } catch (error) {
+    console.error("Session cleanup error:", error);
+  }
+};
+
+// Cleanup sessions on startup (optional - removes all sessions)
+// Uncomment the line below if you want to clear all sessions on server restart
+// cleanupSessions();
 
 // Start Server
 server.listen(PORT, (err) => {
