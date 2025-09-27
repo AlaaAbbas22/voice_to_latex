@@ -67,10 +67,12 @@ io.use(ios(sessionMiddleware));
 // Import routes
 const { router: authRouter } = require("./routes/auth");
 const roomsRouter = require("./routes/rooms");
+const transcriptionRouter = require("./routes/transcription");
 
 // Use routes
 app.use("/", authRouter);
 app.use("/", roomsRouter);
+app.use("/", transcriptionRouter);
 
 // Setup Socket.IO connection
 setupSocketConnection(io, sessionStore);
