@@ -120,7 +120,10 @@ class RecordingManager {
     const formData = new FormData();
     formData.append("audioFile", blob, "recording.webm");
     formData.append("language", "en");
-    formData.append("prompt", "This is math content for a lecture");
+    formData.append(
+      "prompt",
+      "This is math content for a lecture. If unclear, return empty string"
+    );
 
     const response = await fetch(
       process.env.NEXT_PUBLIC_BASE_URL + "/transcribe",
@@ -139,7 +142,6 @@ class RecordingManager {
 
     if (result.success && result.text) {
       this.options.onChunkTranscribed?.(result.text);
-    } else {
     }
   }
 

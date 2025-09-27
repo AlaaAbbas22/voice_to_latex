@@ -81,6 +81,10 @@ export default function Content({
     }
   }, [transcriptionMethod, setText]);
 
+  useEffect(() => {
+    debouncedEmitText(text);
+  }, [text]);
+
   // Handle browser speech recognition for browser method
   useEffect(() => {
     if (transcript && transcriptionMethod === "browser") {
@@ -280,7 +284,6 @@ export default function Content({
                 value={text}
                 onChange={(e) => {
                   setText(e.target.value);
-                  debouncedEmitText(e.target.value);
                 }}
                 placeholder="Start typing here or use voice input..."
               />
