@@ -46,7 +46,7 @@ const transcribeFile = async (buffer, filename, options = {}) => {
     return transcription || "";
   } catch (error) {
     console.error("Transcription error:", error);
-    return "Transcription failed";
+    return "";
   }
 };
 
