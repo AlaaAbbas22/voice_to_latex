@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import Particles from "@/components/ui/Particle";
 import { motion, useScroll, useTransform } from "framer-motion";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -93,8 +94,22 @@ export default function LandingPage() {
             animate={{ opacity: 1 }}
             transition={{ duration: 1 }}
           >
-            <div className="absolute inset-0 bg-gradient-to-r from-purple-400 via-pink-500 to-red-500 opacity-90"></div>
+            <div className="absolute inset-0 bg-gradient-to-r from-purple-900 via-pink-900 to-red-900 opacity-90"></div>
             <div className="absolute inset-0 bg-[url('/math-bg.jpg')] bg-cover bg-center mix-blend-overlay"></div>
+            <div
+              style={{ width: "100%", height: "100vh", position: "relative" }}
+            >
+              <Particles
+                particleColors={["#ffffff", "#ffffff"]}
+                particleCount={200}
+                particleSpread={10}
+                speed={0.1}
+                particleBaseSize={100}
+                moveParticlesOnHover={true}
+                alphaParticles={false}
+                disableRotation={false}
+              />
+            </div>
           </motion.div>
 
           <div className="container mx-auto px-4 z-10">

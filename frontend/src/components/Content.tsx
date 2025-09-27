@@ -32,6 +32,8 @@ import {
   Download,
 } from "lucide-react";
 import { toast } from "react-hot-toast";
+import RecordingManager, { TranscriptionMethod } from "../utils/recording";
+import { TranscriptionToggle } from "./TranscriptionToggle";
 
 interface Props {
   text: string;
@@ -55,31 +57,84 @@ export default function Content({
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [recording, setRecording] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [transcriptionMethod, setTranscriptionMethod] = useState<TranscriptionMethod>("server");
+  const recordingManagerRef = useRef<RecordingManager | null>(null);
   const { transcript, resetTranscript, browserSupportsSpeechRecognition } =
     useSpeechRecognition();
 
+  // Initialize recording manager (client-side only)
   useEffect(() => {
-    if (transcript) {
+    if (typeof window !== "undefined") {
+      recordingManagerRef.current = new RecordingManager({
+        method: transcriptionMethod,
+        onChunkTranscribed: (transcribedText) => {
+          if (transcribedText.trim()) {
+            setText((prev) => prev + " " + transcribedText);
+            toast.success(`Transcription: "${transcribedText.substring(0, 50)}${transcribedText.length > 50 ? '...' : ''}"`);
+          }
+        },
+        onError: (error) => {
+          toast.error(error);
+        },
+        isRecording: recording,
+      });
+    }
+  }, [transcriptionMethod, setText]);
+
+  useEffect(() => {
+    debouncedEmitText(text);
+  }, [text]);
+
+  // Handle browser speech recognition for browser method
+  useEffect(() => {
+    if (transcript && transcriptionMethod === "browser") {
       setText((prev) => prev + " " + transcript);
       resetTranscript();
     }
-  }, [transcript, setText, resetTranscript]);
+  }, [transcript, setText, resetTranscript, transcriptionMethod]);
 
-  const startRecording = () => {
-    if (!browserSupportsSpeechRecognition) {
-      toast.error("Your browser doesn't support speech recognition");
+  const startRecording = async () => {
+    if (typeof window === "undefined") {
+      toast.error("Recording not available on server side");
       return;
     }
-    setRecording(true);
-    SpeechRecognition.startListening({ continuous: true });
-    toast.success("Voice recording started");
+
+    if (transcriptionMethod === "browser") {
+      if (!browserSupportsSpeechRecognition) {
+        toast.error("Your browser doesn't support speech recognition");
+        return;
+      }
+      setRecording(true);
+      SpeechRecognition.startListening({ continuous: true });
+      toast.success("Browser voice recording started");
+    } else {
+      // Server method using MediaRecorder
+      if (!recordingManagerRef.current) {
+        toast.error("Recording manager not initialized - please wait");
+        return;
+      }
+      try {
+        await recordingManagerRef.current?.startRecording();
+        setRecording(true);
+        toast.success("Server voice recording started");
+      } catch (error) {
+        toast.error("Failed to start recording");
+      }
+    }
   };
 
   const stopRecording = () => {
-    setRecording(false);
-    SpeechRecognition.stopListening();
-    resetTranscript();
-    toast.success("Voice recording stopped");
+    if (transcriptionMethod === "browser") {
+      setRecording(false);
+      SpeechRecognition.stopListening();
+      resetTranscript();
+      toast.success("Browser voice recording stopped");
+    } else {
+      // Server method
+      recordingManagerRef.current?.stopRecording();
+      setRecording(false);
+      toast.success("Server voice recording stopped");
+    }
   };
 
   // Debounced socket emission
@@ -229,7 +284,6 @@ export default function Content({
                 value={text}
                 onChange={(e) => {
                   setText(e.target.value);
-                  debouncedEmitText(e.target.value);
                 }}
                 placeholder="Start typing here or use voice input..."
               />
@@ -352,6 +406,14 @@ export default function Content({
       </motion.div>
 
       {renderContent()}
+
+      {/* Transcription method toggle - only show for editors */}
+      {role === "editor" && (
+        <TranscriptionToggle
+          method={transcriptionMethod}
+          onMethodChange={setTranscriptionMethod}
+        />
+      )}
     </motion.div>
   );
 }
