@@ -12,14 +12,14 @@ async function getGroqChatCompletion(input) {
           content: input,
         },
       ],
-      model: "llama-3.3-70b-versatile",
+      model: "openai/gpt-oss-120b",
     })
   ).choices[0]?.message?.content;
 }
 
 async function llmResponse(message) {
   const response = await getGroqChatCompletion(
-    `Convert this text to latex. Return the plain inner latex code only and make sure to break the line wherever it is broken in the input. ONLY CONVERT THE GIVEN TEXT TO LATEX AND DO NOT ADD ANYTHING TO THE CONTENT AND MAKE SURE THE LATEX IS SURROUNDED BY A SINGLE DOLLAR SIGN with a space before the dollar sign. \n${message}`,
+    `Convert this text to latex. Return the plain inner latex code only and make sure to break the line wherever it is broken in the input. ONLY CONVERT THE GIVEN TEXT TO LATEX AND DO NOT ADD ANYTHING TO THE CONTENT AND MAKE SURE THE LATEX IS NOT SURROUNDED BY A SINGLE DOLLAR SIGN with a space before the dollar sign. \n${message}`
   );
   return response;
 }

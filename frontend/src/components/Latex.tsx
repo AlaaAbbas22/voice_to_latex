@@ -8,7 +8,7 @@ interface LatexDisplayerProps {
 const LatexDisplayer: React.FC<LatexDisplayerProps> = ({ latex }) => {
   return (
     <MathJaxContext>
-      <MathJax>{`$${latex}$`}</MathJax>
+      <MathJax>{`$$${latex}$$`}</MathJax>
     </MathJaxContext>
   );
 };

@@ -71,7 +71,6 @@ export default function Content({
         onChunkTranscribed: (transcribedText) => {
           if (transcribedText.trim()) {
             setText((prev) => prev + " " + transcribedText);
-            toast.success(`Transcription: "${transcribedText.substring(0, 50)}${transcribedText.length > 50 ? '...' : ''}"`);
           }
         },
         onError: (error) => {
