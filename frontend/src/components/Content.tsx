@@ -142,8 +142,13 @@ export default function Content({
   useEffect(() => {
     if (!recordingManagerRef.current) return;
     const handleKeyDown = async (e: KeyboardEvent) => {
-      const isPTTKey = e.ctrlKey || e.metaKey;
-      if (!isPTTKey || isPushToTalkActive) return;
+
+      // Only respond to Ctrl key (Windows/Linux) or Command key (Mac)
+      // Ignore other modifier keys like Windows key, Alt, etc.
+      const isCtrlKey = e.key === 'Control' || e.code === 'ControlLeft' || e.code === 'ControlRight';
+
+      if ((!isCtrlKey) || isPushToTalkActive) return;
+
       // Start PTT only if not already recording (avoid conflicts)
       try {
         await recordingManagerRef.current?.startPushToTalk();
@@ -151,8 +156,12 @@ export default function Content({
       } catch { }
     };
     const handleKeyUp = async (e: KeyboardEvent) => {
-      const isPTTKey = !e.ctrlKey && !e.metaKey;
-      if (!isPTTKey || !isPushToTalkActive) return;
+
+      // Only respond to Ctrl key (Windows/Linux) or Command key (Mac)
+      const isCtrlKey = e.key === 'Control' || e.code === 'ControlLeft' || e.code === 'ControlRight';
+
+      if ((!isCtrlKey) || !isPushToTalkActive) return;
+
       // Key released -> stop PTT
       try {
         await recordingManagerRef.current?.stopPushToTalk();
@@ -344,8 +353,8 @@ export default function Content({
 
                 {/* Push-to-talk hint */}
                 <div className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-all duration-200 ${isPushToTalkActive
-                    ? "bg-red-100 text-red-700 border border-red-200"
-                    : "bg-gray-100 text-gray-600"
+                  ? "bg-red-100 text-red-700 border border-red-200"
+                  : "bg-gray-100 text-gray-600"
                   }`}>
                   <Mic className={`h-4 w-4 ${isPushToTalkActive ? "animate-pulse" : ""}`} />
                   <span>
