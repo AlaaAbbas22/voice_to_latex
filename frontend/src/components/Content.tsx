@@ -58,6 +58,7 @@ export default function Content({
   const [recording, setRecording] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [transcriptionMethod, setTranscriptionMethod] = useState<TranscriptionMethod>("server");
+  const [isPushToTalkActive, setIsPushToTalkActive] = useState(false);
   const recordingManagerRef = useRef<RecordingManager | null>(null);
   const { transcript, resetTranscript, browserSupportsSpeechRecognition } =
     useSpeechRecognition();
@@ -136,6 +137,44 @@ export default function Content({
       toast.success("Server voice recording stopped");
     }
   };
+
+  // Push-to-talk: hold Ctrl (Windows/Linux) or Meta/Command (Mac)
+  useEffect(() => {
+    if (!recordingManagerRef.current) return;
+    const handleKeyDown = async (e: KeyboardEvent) => {
+
+      // Only respond to Ctrl key (Windows/Linux) or Command key (Mac)
+      // Ignore other modifier keys like Windows key, Alt, etc.
+      const isCtrlKey = e.key === 'Control' || e.code === 'ControlLeft' || e.code === 'ControlRight';
+
+      if ((!isCtrlKey) || isPushToTalkActive) return;
+
+      // Start PTT only if not already recording (avoid conflicts)
+      try {
+        await recordingManagerRef.current?.startPushToTalk();
+        setIsPushToTalkActive(true);
+      } catch { }
+    };
+    const handleKeyUp = async (e: KeyboardEvent) => {
+
+      // Only respond to Ctrl key (Windows/Linux) or Command key (Mac)
+      const isCtrlKey = e.key === 'Control' || e.code === 'ControlLeft' || e.code === 'ControlRight';
+
+      if ((!isCtrlKey) || !isPushToTalkActive) return;
+
+      // Key released -> stop PTT
+      try {
+        await recordingManagerRef.current?.stopPushToTalk();
+        setIsPushToTalkActive(false);
+      } catch { }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    window.addEventListener("keyup", handleKeyUp);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("keyup", handleKeyUp);
+    };
+  }, [isPushToTalkActive]);
 
   // Debounced socket emission
   const debouncedEmitText = useCallback(
@@ -311,6 +350,25 @@ export default function Content({
                     )}
                   </Button>
                 </motion.div>
+
+                {/* Push-to-talk hint */}
+                <div className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-all duration-200 ${isPushToTalkActive
+                  ? "bg-red-100 text-red-700 border border-red-200"
+                  : "bg-gray-100 text-gray-600"
+                  }`}>
+                  <Mic className={`h-4 w-4 ${isPushToTalkActive ? "animate-pulse" : ""}`} />
+                  <span>
+                    {isPushToTalkActive ? (
+                      <>
+                        <span className="font-medium">Recording...</span> Release <kbd className="px-1.5 py-0.5 bg-white border border-gray-300 rounded text-xs font-mono">Ctrl</kbd>
+                      </>
+                    ) : (
+                      <>
+                        Hold <kbd className="px-1.5 py-0.5 bg-white border border-gray-300 rounded text-xs font-mono">Ctrl</kbd> to speak
+                      </>
+                    )}
+                  </span>
+                </div>
 
                 <motion.div
                   whileHover={{ scale: 1.05 }}
