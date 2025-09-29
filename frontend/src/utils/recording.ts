@@ -16,6 +16,9 @@ class RecordingManager {
   private chunkCount: number = 0;
   private dataHandler: ((chunk: any) => void) | null = null;
   private errorHandler: ((error: any) => void) | null = null;
+  private pttRecorder: MediaRecorder | null = null;
+  private pttChunks: BlobPart[] = [];
+  private pttActive: boolean = false;
 
   constructor(options: TranscriptionOptions) {
     this.options = options;
@@ -113,6 +116,63 @@ class RecordingManager {
       }
     } catch (error) {
       this.options.onError?.(`Transcription failed: ${error}`);
+    }
+  }
+
+  // Push-to-talk: start a single continuous recording until stopped
+  async startPushToTalk(): Promise<void> {
+    if (this.pttActive) {
+      return;
+    }
+    try {
+      if (!this.stream) {
+        this.stream = await navigator.mediaDevices.getUserMedia({
+          audio: { echoCancellation: true, noiseSuppression: true },
+        });
+      }
+      this.pttChunks = [];
+      this.pttRecorder = new MediaRecorder(this.stream, {
+        mimeType: "audio/webm",
+      });
+      this.pttRecorder.ondataavailable = (e: BlobEvent) => {
+        if (e.data && e.data.size > 0) {
+          this.pttChunks.push(e.data);
+        }
+      };
+      this.pttRecorder.start();
+      this.pttActive = true;
+    } catch (error) {
+      this.options.onError?.(`Failed to start push-to-talk: ${error}`);
+    }
+  }
+
+  // Push-to-talk: stop and send the single blob
+  async stopPushToTalk(): Promise<void> {
+    if (!this.pttActive || !this.pttRecorder) {
+      return;
+    }
+    try {
+      const stopped: Promise<void> = new Promise((resolve) => {
+        if (!this.pttRecorder) {
+          resolve();
+          return;
+        }
+        this.pttRecorder.onstop = () => resolve();
+      });
+      this.pttRecorder.stop();
+      await stopped;
+      const blob = new Blob(this.pttChunks, { type: "audio/webm" });
+      this.pttChunks = [];
+      this.pttRecorder = null;
+      this.pttActive = false;
+      await this.processChunk(blob);
+      // Release mic after PTT
+      if (this.stream) {
+        this.stream.getTracks().forEach((t) => t.stop());
+        this.stream = null;
+      }
+    } catch (error) {
+      this.options.onError?.(`Failed to stop push-to-talk: ${error}`);
     }
   }
 
