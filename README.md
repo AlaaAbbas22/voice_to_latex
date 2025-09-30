@@ -1,4 +1,4 @@
-# Vatex - Voice to LaTeX Web Application
+# Vatex
 
 Vatex is a collaborative web application that converts voice and natural language to LaTeX. It provides real-time collaboration features and instant LaTeX previews.
 
