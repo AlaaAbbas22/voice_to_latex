@@ -11,7 +11,7 @@ import { getCookie } from "cookies-next";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { toast, Toaster } from "react-hot-toast";
+import { toast } from "react-hot-toast";
 import Head from "next/head";
 
 export default function Room() {
@@ -115,24 +115,30 @@ export default function Room() {
     }
   };
 
+  const handleRoomNameUpdate = (newName: string) => {
+    setRoomName(newName);
+  };
+
   const toggleSidebar = () => {
     setShowSidebar(!showSidebar);
   };
 
   if (isLoading) {
     return (
-      <div className="h-screen w-screen flex items-center justify-center bg-gradient-to-r from-purple-400 via-pink-500 to-red-500">
+      <div className="h-screen w-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          className="text-white text-center"
+          className="text-gray-800 text-center"
         >
-          <Loader2 className="h-12 w-12 animate-spin mx-auto mb-4" />
+          <Loader2 className="h-12 w-12 animate-spin mx-auto mb-4 text-indigo-600" />
           <h2 className="text-2xl font-bold">Loading Room...</h2>
         </motion.div>
       </div>
     );
   }
+
+  const roomId = router.asPath.split("#")[1];
 
   return (
     <>
@@ -141,7 +147,12 @@ export default function Room() {
       </Head>
 
       <div className="flex flex-col h-screen w-screen bg-gray-50 overflow-hidden">
-        <Header />
+        <Header
+          roomName={roomName}
+          roomId={roomId}
+          role={role}
+          onRoomNameUpdate={handleRoomNameUpdate}
+        />
 
         <div className="flex flex-1 h-full w-full relative">
           <AnimatePresence>
@@ -179,12 +190,12 @@ export default function Room() {
                 onClick={toggleSidebar}
                 variant="outline"
                 size="icon"
-                className="rounded-full shadow-md bg-white"
+                className="rounded-full shadow-lg bg-white border-indigo-200 hover:bg-indigo-50 hover:border-indigo-300"
               >
                 {showSidebar ? (
-                  <ChevronLeft className="h-5 w-5" />
+                  <ChevronLeft className="h-5 w-5 text-indigo-600" />
                 ) : (
-                  <ChevronRight className="h-5 w-5" />
+                  <ChevronRight className="h-5 w-5 text-indigo-600" />
                 )}
               </Button>
             </motion.div>
@@ -197,7 +208,6 @@ export default function Room() {
                 router={router}
                 latex={latex}
                 role={role}
-                roomName={roomName}
               />
             </div>
           </motion.div>

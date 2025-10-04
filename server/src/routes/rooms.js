@@ -160,4 +160,72 @@ router.get("/rooms/:roomId/role", requireAuth, async (req, res) => {
   }
 });
 
+// Update Room Name
+router.put("/rooms/:roomId", requireAuth, async (req, res) => {
+  const { roomName } = req.body;
+
+  if (!roomName || !roomName.trim()) {
+    return res.status(400).json({ error: "Room name is required" });
+  }
+
+  try {
+    const room = await Room.findOne({ _id: req.params.roomId });
+
+    if (!room) return res.status(404).json({ error: "Room not found" });
+
+    // Only the room creator can update the room name
+    if (!room.createdBy.equals(req.session.userId)) {
+      return res
+        .status(403)
+        .json({ error: "Only the room creator can update the room name" });
+    }
+
+    room.name = roomName.trim();
+    await room.save();
+
+    res.json({ message: "Room name updated successfully", room });
+  } catch (error) {
+    res.status(400).json({ error: "Error updating room name" });
+  }
+});
+
+// Delete Room
+router.delete("/rooms/:roomId", requireAuth, async (req, res) => {
+  try {
+    const room = await Room.findOne({ _id: req.params.roomId });
+
+    if (!room) return res.status(404).json({ error: "Room not found" });
+
+    // Only the room creator can delete the room
+    if (!room.createdBy.equals(req.session.userId)) {
+      return res
+        .status(403)
+        .json({ error: "Only the room creator can delete the room" });
+    }
+
+    // Delete the room first
+    await Room.findByIdAndDelete(room._id);
+
+    // Remove room from all users' arrays asynchronously (non-blocking)
+    User.updateMany(
+      { createdRooms: room._id },
+      { $pull: { createdRooms: room._id } }
+    ).catch((err) => console.error("Error cleaning up createdRooms:", err));
+
+    User.updateMany(
+      { editorRooms: room._id },
+      { $pull: { editorRooms: room._id } }
+    ).catch((err) => console.error("Error cleaning up editorRooms:", err));
+
+    User.updateMany(
+      { viewableRooms: room._id },
+      { $pull: { viewableRooms: room._id } }
+    ).catch((err) => console.error("Error cleaning up viewableRooms:", err));
+
+    res.json({ message: "Room deleted successfully" });
+  } catch (error) {
+    res.status(400).json({ error: "Error deleting room" });
+  }
+});
+
 module.exports = router;

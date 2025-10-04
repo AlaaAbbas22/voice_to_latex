@@ -158,7 +158,7 @@ export default function Sidebar({ connected, role, onClose }: Props) {
       await handleRemoveUser(userId, currentRole);
       setUsername(userId);
       setAccessRole(newRole);
-      await handleAddUser({ preventDefault: () => {} });
+      await handleAddUser({ preventDefault: () => { } });
       toast.success(`User role changed to ${newRole}`);
     } catch (error) {
       console.error("Error toggling role:", error);
@@ -175,7 +175,7 @@ export default function Sidebar({ connected, role, onClose }: Props) {
 
   return (
     <motion.div
-      className="h-full w-full bg-gradient-to-br from-purple-500 to-pink-600 text-white flex flex-col rounded-r-lg shadow-xl overflow-hidden"
+      className="h-full w-full bg-gradient-to-br from-indigo-600 to-blue-600 text-white flex flex-col rounded-r-lg shadow-xl overflow-hidden"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
@@ -183,9 +183,8 @@ export default function Sidebar({ connected, role, onClose }: Props) {
       <div className="p-4 flex justify-between items-center">
         <div className="flex items-center gap-2">
           <div
-            className={`h-3 w-3 rounded-full ${
-              connected ? "bg-green-400 animate-pulse" : "bg-red-500"
-            }`}
+            className={`h-3 w-3 rounded-full ${connected ? "bg-green-400 animate-pulse" : "bg-red-500"
+              }`}
           />
           <span className="text-sm font-medium">
             {connected ? "Connected" : "Connecting..."}

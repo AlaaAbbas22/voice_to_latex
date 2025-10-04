@@ -10,12 +10,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LogOut, Plus, Search, BookOpen, Edit, Eye } from "lucide-react";
 import Head from "next/head";
 import toast from "react-hot-toast";
+import { RoomCard } from "@/components/RoomCard";
 
 const Dashboard = () => {
   const [roomName, setRoomName] = useState("");
   const [joinRoomId, setJoinRoomId] = useState("");
-  const [createdRooms, setCreatedRooms] = useState([]);
-  const [viewableRooms, setViewableRooms] = useState([]);
+  const [createdRooms, setCreatedRooms] = useState<any[]>([]);
+  const [viewableRooms, setViewableRooms] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const router = useRouter();
   const [username, setUsername] = useState<string | null>(null);
@@ -94,6 +95,26 @@ const Dashboard = () => {
       console.error("Error logging out:", error);
       toast.error("Failed to logout");
     }
+  };
+
+  const handleRoomUpdate = (roomId: string, newName: string) => {
+    // Update the room in state
+    setCreatedRooms((prev) =>
+      prev.map((room: any) =>
+        room._id === roomId ? { ...room, name: newName } : room
+      )
+    );
+    setViewableRooms((prev) =>
+      prev.map((room: any) =>
+        room._id === roomId ? { ...room, name: newName } : room
+      )
+    );
+  };
+
+  const handleRoomDelete = (roomId: string) => {
+    // Remove the room from state
+    setCreatedRooms((prev) => prev.filter((room: any) => room._id !== roomId));
+    setViewableRooms((prev) => prev.filter((room: any) => room._id !== roomId));
   };
 
   const filteredCreatedRooms = createdRooms.filter((room: any) =>
@@ -277,35 +298,13 @@ const Dashboard = () => {
                       ) : (
                         <ul className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           {filteredCreatedRooms.map((room: any) => (
-                            <motion.li
+                            <RoomCard
                               key={room._id}
-                              whileHover={{ scale: 1.02 }}
-                              transition={{
-                                type: "spring",
-                                stiffness: 400,
-                                damping: 10,
-                              }}
-                            >
-                              <Card className="cursor-pointer hover:shadow-md transition-all duration-200 border-l-4 border-l-purple-500">
-                                <CardContent className="p-4 flex justify-between items-center">
-                                  <div>
-                                    <h3 className="font-medium">{room.name}</h3>
-                                    <p className="text-sm text-gray-500">
-                                      Editor Access
-                                    </p>
-                                  </div>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() =>
-                                      router.push(`/room/#${room._id}`)
-                                    }
-                                  >
-                                    Open
-                                  </Button>
-                                </CardContent>
-                              </Card>
-                            </motion.li>
+                              room={room}
+                              accessType="editor"
+                              onUpdate={handleRoomUpdate}
+                              onDelete={handleRoomDelete}
+                            />
                           ))}
                         </ul>
                       )}
@@ -328,35 +327,11 @@ const Dashboard = () => {
                       ) : (
                         <ul className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           {filteredViewableRooms.map((room: any) => (
-                            <motion.li
+                            <RoomCard
                               key={room._id}
-                              whileHover={{ scale: 1.02 }}
-                              transition={{
-                                type: "spring",
-                                stiffness: 400,
-                                damping: 10,
-                              }}
-                            >
-                              <Card className="cursor-pointer hover:shadow-md transition-all duration-200 border-l-4 border-l-blue-500">
-                                <CardContent className="p-4 flex justify-between items-center">
-                                  <div>
-                                    <h3 className="font-medium">{room.name}</h3>
-                                    <p className="text-sm text-gray-500">
-                                      Viewer Access
-                                    </p>
-                                  </div>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() =>
-                                      router.push(`/room/#${room._id}`)
-                                    }
-                                  >
-                                    Open
-                                  </Button>
-                                </CardContent>
-                              </Card>
-                            </motion.li>
+                              room={room}
+                              accessType="viewer"
+                            />
                           ))}
                         </ul>
                       )}

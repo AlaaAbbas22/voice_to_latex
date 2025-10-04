@@ -42,7 +42,6 @@ interface Props {
   router: any;
   latex: string;
   role: string;
-  roomName: string;
 }
 
 export default function Content({
@@ -52,7 +51,6 @@ export default function Content({
   router,
   latex,
   role,
-  roomName,
 }: Props) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [recording, setRecording] = useState(false);
@@ -453,15 +451,6 @@ export default function Content({
       animate="visible"
       variants={containerVariants}
     >
-      <motion.div variants={itemVariants} className="mb-6">
-        <h1 className="text-3xl font-bold text-gray-800">
-          {roomName || "Untitled Document"}
-        </h1>
-        <p className="text-gray-500">
-          You are in {role === "editor" ? "editing" : "viewing"} mode
-        </p>
-      </motion.div>
-
       {renderContent()}
 
       {/* Transcription method toggle - only show for editors */}
