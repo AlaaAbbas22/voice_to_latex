@@ -25,7 +25,7 @@ router.post("/rooms", requireAuth, async (req, res) => {
 
     res.status(201).json({ message: "Room created", room: newRoom });
   } catch (error) {
-    res.status(400).json({ error: "Room name already exists" });
+    res.status(400).json({ error: error.message });
   }
 });
 
@@ -48,7 +48,7 @@ router.get("/viewablerooms", requireAuth, async (req, res) => {
 
 // Get Room Details
 router.get("/rooms/:roomId", requireAuth, async (req, res) => {
-  const room = await Room.findOne({ name: req.params.roomId }).populate(
+  const room = await Room.findOne({ _id: req.params.roomId }).populate(
     "createdBy editors viewers"
   );
 
@@ -78,7 +78,7 @@ router.get("/rooms/:roomId", requireAuth, async (req, res) => {
 // Add Editor or Viewer to Room
 router.post("/rooms/:roomId/addUser", requireAuth, async (req, res) => {
   const { userId, role } = req.body;
-  const room = await Room.findOne({ name: req.params.roomId });
+  const room = await Room.findOne({ _id: req.params.roomId });
   const user = await User.findOne({ username: userId });
 
   if (!room) return res.status(404).json({ error: "Room not found" });
@@ -114,7 +114,7 @@ router.post("/rooms/:roomId/addUser", requireAuth, async (req, res) => {
 // Remove Editor or Viewer from Room
 router.post("/rooms/:roomId/removeUser", requireAuth, async (req, res) => {
   const { userId, role } = req.body;
-  const room = await Room.findOne({ name: req.params.roomId });
+  const room = await Room.findOne({ _id: req.params.roomId });
   const user = await User.findOne({ username: userId });
 
   if (!room) return res.status(404).json({ error: "Room not found" });
@@ -144,7 +144,7 @@ router.post("/rooms/:roomId/removeUser", requireAuth, async (req, res) => {
 
 // Get User Role in Room
 router.get("/rooms/:roomId/role", requireAuth, async (req, res) => {
-  const room = await Room.findOne({ name: req.params.roomId });
+  const room = await Room.findOne({ _id: req.params.roomId });
 
   if (!room) return res.status(404).json({ error: "Room not found" });
 

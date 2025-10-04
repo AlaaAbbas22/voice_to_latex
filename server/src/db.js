@@ -42,7 +42,7 @@ const Session = mongoose.model("Session", sessionSchema);
 
 // Room Schema (Tracks who created it, editors, and viewers)
 const roomSchema = new mongoose.Schema({
-  name: { type: String, unique: true, required: true },
+  name: { type: String, required: true },
   createdBy: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "User",

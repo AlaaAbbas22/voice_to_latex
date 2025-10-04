@@ -94,7 +94,7 @@ export default function LandingPage() {
             animate={{ opacity: 1 }}
             transition={{ duration: 1 }}
           >
-            <div className="absolute inset-0 bg-gradient-to-r from-purple-900 via-pink-900 to-red-900 opacity-90"></div>
+            <div className="absolute inset-0 bg-black opacity-90"></div>
             <div className="absolute inset-0 bg-[url('/math-bg.jpg')] bg-cover bg-center mix-blend-overlay"></div>
             <div
               style={{ width: "100%", height: "100vh", position: "relative" }}

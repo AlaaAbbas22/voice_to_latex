@@ -52,7 +52,7 @@ export default function Room() {
 
         socketVariable.on("authenticated", () => {
           socketVariable.emit("join-room", String(sessionId));
-          fetchRole(sessionId);
+          fetchRoomDetails(sessionId);
         });
 
         socketVariable.on("receive-text", (latex: string) => {
@@ -92,7 +92,7 @@ export default function Room() {
     };
   }, [router.isReady, router]);
 
-  const fetchRole = async (roomId: string) => {
+  const fetchRoomDetails = async (roomId: string) => {
     try {
       const response = await axios.get(
         `${process.env.NEXT_PUBLIC_BASE_URL}/rooms/${roomId}/role`,
@@ -101,6 +101,14 @@ export default function Room() {
         },
       );
       setRole(response.data.role);
+
+      const room = await axios.get(
+        `${process.env.NEXT_PUBLIC_BASE_URL}/rooms/${roomId}`,
+        {
+          withCredentials: true,
+        },
+      );
+      setRoomName(room.data.name);
     } catch (error) {
       console.error("Error fetching role:", error);
       toast.error("Failed to fetch your role");

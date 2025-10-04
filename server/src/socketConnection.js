@@ -55,7 +55,7 @@ module.exports = function setupSocketConnection(io, sessionStore) {
         return socket.emit("error", "Not authenticated");
       }
 
-      let roomDoc = await Room.findOne({ name: room });
+      let roomDoc = await Room.findOne({ _id: room });
       if (
         !roomDoc ||
         !roomDoc.editors.some((id) => id.equals(currentSession.userId))
@@ -81,18 +81,15 @@ module.exports = function setupSocketConnection(io, sessionStore) {
     });
 
     // Join Room
-    socket.on("join-room", async (roomName, sessionId) => {
-      // Try to get session from sessionId if provided
-      if (sessionId) {
-        await updateSessionFromId(sessionId);
-      }
+    socket.on("join-room", async (roomId) => {
+
 
       const currentSession = getCurrentSession();
       if (!currentSession || !currentSession.username) {
         return socket.emit("error", "Not authenticated");
       }
 
-      let room = await Room.findOne({ name: roomName });
+      let room = await Room.findOne({ _id: roomId });
       if (!room) {
         return socket.emit("error", "Room does not exist");
       }
@@ -109,7 +106,7 @@ module.exports = function setupSocketConnection(io, sessionStore) {
         return socket.emit("error", "You don't have access to this room");
       }
 
-      socket.join(roomName);
+      socket.join(roomId);
       socket.emit("receive-original", room.content, "");
       socket.emit("receive-text", room.latex);
     });

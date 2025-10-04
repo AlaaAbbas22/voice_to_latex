@@ -13,7 +13,7 @@ import toast from "react-hot-toast";
 
 const Dashboard = () => {
   const [roomName, setRoomName] = useState("");
-  const [joinRoomName, setJoinRoomName] = useState("");
+  const [joinRoomId, setJoinRoomId] = useState("");
   const [createdRooms, setCreatedRooms] = useState([]);
   const [viewableRooms, setViewableRooms] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
@@ -62,7 +62,7 @@ const Dashboard = () => {
         { withCredentials: true },
       );
       toast.success(response.data.message || "Room created successfully");
-      router.push(`/room/#${roomName}`);
+      router.push(`/room/#${response.data.room._id}`);
     } catch (error) {
       if (axios.isAxiosError(error) && error.response) {
         toast.error(error.response.data.error || "Failed to create room");
@@ -75,11 +75,11 @@ const Dashboard = () => {
   };
 
   const handleJoinRoom = () => {
-    if (!joinRoomName.trim()) {
+    if (!joinRoomId.trim()) {
       toast.error("Please enter a room name to join");
       return;
     }
-    router.push(`/room/#${joinRoomName}`);
+    router.push(`/room/#${joinRoomId}`);
   };
 
   const handleLogout = async () => {
@@ -205,9 +205,9 @@ const Dashboard = () => {
                   <div className="space-y-4">
                     <Input
                       type="text"
-                      value={joinRoomName}
-                      onChange={(e) => setJoinRoomName(e.target.value)}
-                      placeholder="Enter room name"
+                      value={joinRoomId}
+                      onChange={(e) => setJoinRoomId(e.target.value)}
+                      placeholder="Enter room ID"
                       className="w-full"
                     />
                     <Button
@@ -298,7 +298,7 @@ const Dashboard = () => {
                                     variant="ghost"
                                     size="sm"
                                     onClick={() =>
-                                      router.push(`/room/#${room.name}`)
+                                      router.push(`/room/#${room._id}`)
                                     }
                                   >
                                     Open
@@ -349,7 +349,7 @@ const Dashboard = () => {
                                     variant="ghost"
                                     size="sm"
                                     onClick={() =>
-                                      router.push(`/room/#${room.name}`)
+                                      router.push(`/room/#${room._id}`)
                                     }
                                   >
                                     Open
