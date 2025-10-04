@@ -25,7 +25,7 @@ router.post("/rooms", requireAuth, async (req, res) => {
 
     res.status(201).json({ message: "Room created", room: newRoom });
   } catch (error) {
-    res.status(400).json({ error: "Room name already exists" });
+    res.status(400).json({ error: error.message });
   }
 });
 
@@ -48,7 +48,7 @@ router.get("/viewablerooms", requireAuth, async (req, res) => {
 
 // Get Room Details
 router.get("/rooms/:roomId", requireAuth, async (req, res) => {
-  const room = await Room.findOne({ name: req.params.roomId }).populate(
+  const room = await Room.findOne({ _id: req.params.roomId }).populate(
     "createdBy editors viewers"
   );
 
@@ -78,7 +78,7 @@ router.get("/rooms/:roomId", requireAuth, async (req, res) => {
 // Add Editor or Viewer to Room
 router.post("/rooms/:roomId/addUser", requireAuth, async (req, res) => {
   const { userId, role } = req.body;
-  const room = await Room.findOne({ name: req.params.roomId });
+  const room = await Room.findOne({ _id: req.params.roomId });
   const user = await User.findOne({ username: userId });
 
   if (!room) return res.status(404).json({ error: "Room not found" });
@@ -114,7 +114,7 @@ router.post("/rooms/:roomId/addUser", requireAuth, async (req, res) => {
 // Remove Editor or Viewer from Room
 router.post("/rooms/:roomId/removeUser", requireAuth, async (req, res) => {
   const { userId, role } = req.body;
-  const room = await Room.findOne({ name: req.params.roomId });
+  const room = await Room.findOne({ _id: req.params.roomId });
   const user = await User.findOne({ username: userId });
 
   if (!room) return res.status(404).json({ error: "Room not found" });
@@ -144,7 +144,7 @@ router.post("/rooms/:roomId/removeUser", requireAuth, async (req, res) => {
 
 // Get User Role in Room
 router.get("/rooms/:roomId/role", requireAuth, async (req, res) => {
-  const room = await Room.findOne({ name: req.params.roomId });
+  const room = await Room.findOne({ _id: req.params.roomId });
 
   if (!room) return res.status(404).json({ error: "Room not found" });
 
@@ -157,6 +157,74 @@ router.get("/rooms/:roomId/role", requireAuth, async (req, res) => {
     return res.json({ role: "viewer" });
   } else {
     return res.json({ role: "no access" });
+  }
+});
+
+// Update Room Name
+router.put("/rooms/:roomId", requireAuth, async (req, res) => {
+  const { roomName } = req.body;
+
+  if (!roomName || !roomName.trim()) {
+    return res.status(400).json({ error: "Room name is required" });
+  }
+
+  try {
+    const room = await Room.findOne({ _id: req.params.roomId });
+
+    if (!room) return res.status(404).json({ error: "Room not found" });
+
+    // Only the room creator can update the room name
+    if (!room.createdBy.equals(req.session.userId)) {
+      return res
+        .status(403)
+        .json({ error: "Only the room creator can update the room name" });
+    }
+
+    room.name = roomName.trim();
+    await room.save();
+
+    res.json({ message: "Room name updated successfully", room });
+  } catch (error) {
+    res.status(400).json({ error: "Error updating room name" });
+  }
+});
+
+// Delete Room
+router.delete("/rooms/:roomId", requireAuth, async (req, res) => {
+  try {
+    const room = await Room.findOne({ _id: req.params.roomId });
+
+    if (!room) return res.status(404).json({ error: "Room not found" });
+
+    // Only the room creator can delete the room
+    if (!room.createdBy.equals(req.session.userId)) {
+      return res
+        .status(403)
+        .json({ error: "Only the room creator can delete the room" });
+    }
+
+    // Delete the room first
+    await Room.findByIdAndDelete(room._id);
+
+    // Remove room from all users' arrays asynchronously (non-blocking)
+    User.updateMany(
+      { createdRooms: room._id },
+      { $pull: { createdRooms: room._id } }
+    ).catch((err) => console.error("Error cleaning up createdRooms:", err));
+
+    User.updateMany(
+      { editorRooms: room._id },
+      { $pull: { editorRooms: room._id } }
+    ).catch((err) => console.error("Error cleaning up editorRooms:", err));
+
+    User.updateMany(
+      { viewableRooms: room._id },
+      { $pull: { viewableRooms: room._id } }
+    ).catch((err) => console.error("Error cleaning up viewableRooms:", err));
+
+    res.json({ message: "Room deleted successfully" });
+  } catch (error) {
+    res.status(400).json({ error: "Error deleting room" });
   }
 });
 
