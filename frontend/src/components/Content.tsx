@@ -54,7 +54,6 @@ export default function Content({
 }: Props) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [recording, setRecording] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
   const [transcriptionMethod, setTranscriptionMethod] = useState<TranscriptionMethod>("server");
   const [isPushToTalkActive, setIsPushToTalkActive] = useState(false);
   const recordingManagerRef = useRef<RecordingManager | null>(null);
@@ -189,19 +188,6 @@ export default function Content({
     [socket, router],
   );
 
-  const handleSave = async () => {
-    setIsSaving(true);
-    try {
-      // Simulate saving - replace with actual API call if needed
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      toast.success("Document saved successfully");
-    } catch (error) {
-      toast.error("Failed to save document");
-      console.error("Save error:", error);
-    } finally {
-      setIsSaving(false);
-    }
-  };
 
   const handleCopyLatex = () => {
     navigator.clipboard.writeText(latex);
@@ -304,7 +290,7 @@ export default function Content({
 
     // For editors, show split view with editor and preview side by side
     return (
-      <div className="flex-1 flex flex-col md:flex-row gap-4">
+      <div className="flex-1 flex flex-col md:flex-row gap-1">
         <motion.div variants={itemVariants} className="flex-1 min-w-0">
           <Card className="h-full flex flex-col">
             <CardHeader className="pb-2">
@@ -324,68 +310,60 @@ export default function Content({
                 placeholder="Start typing here or use voice input..."
               />
 
-              <div className="flex flex-wrap gap-2 mt-4">
+              <div className="flex flex-col gap-3 mt-4">
                 <motion.div
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
+                  className={`flex items-center justify-center gap-3 px-6 py-4 rounded-lg text-base font-medium transition-all duration-200 ${isPushToTalkActive
+                    ? "bg-gradient-to-r from-red-500 to-pink-500 text-white shadow-lg scale-105"
+                    : "bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-md hover:shadow-lg hover:scale-[1.02]"
+                    }`}
+                  whileHover={{ scale: isPushToTalkActive ? 1.05 : 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  <Mic className={`h-5 w-5 ${isPushToTalkActive ? "animate-pulse" : ""}`} />
+                  <span>
+                    {isPushToTalkActive ? (
+                      <>
+                        <span className="font-bold">🎙️ Recording...</span> Release{" "}
+                        <kbd className="px-2 py-1 bg-white/20 border border-white/30 rounded text-sm font-mono ml-1">
+                          Ctrl
+                        </kbd>
+                      </>
+                    ) : (
+                      <>
+                        <span className="font-semibold">Press & Hold</span>{" "}
+                        <kbd className="px-2 py-1 bg-white/20 border border-white/30 rounded text-sm font-mono mx-1">
+                          Ctrl
+                        </kbd>{" "}
+                        <span className="font-semibold">to Speak</span>
+                      </>
+                    )}
+                  </span>
+                </motion.div>
+
+                <div className="flex items-center gap-2">
+                  <div className="flex-1 border-t border-gray-300"></div>
+                  <span className="text-xs text-gray-500 uppercase tracking-wide">or</span>
+                  <div className="flex-1 border-t border-gray-300"></div>
+                </div>
+
+                <motion.div
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
                 >
                   <Button
                     onClick={recording ? stopRecording : startRecording}
-                    variant={recording ? "destructive" : "default"}
-                    className="flex items-center gap-2"
+                    variant={recording ? "destructive" : "outline"}
+                    className="w-full flex items-center justify-center gap-2"
                   >
                     {recording ? (
                       <>
                         <MicOff className="h-4 w-4" />
-                        Stop Recording
+                        Stop Continuous Recording
                       </>
                     ) : (
                       <>
                         <Mic className="h-4 w-4" />
-                        Start Voice Input
-                      </>
-                    )}
-                  </Button>
-                </motion.div>
-
-                {/* Push-to-talk hint */}
-                <div className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-all duration-200 ${isPushToTalkActive
-                  ? "bg-red-100 text-red-700 border border-red-200"
-                  : "bg-gray-100 text-gray-600"
-                  }`}>
-                  <Mic className={`h-4 w-4 ${isPushToTalkActive ? "animate-pulse" : ""}`} />
-                  <span>
-                    {isPushToTalkActive ? (
-                      <>
-                        <span className="font-medium">Recording...</span> Release <kbd className="px-1.5 py-0.5 bg-white border border-gray-300 rounded text-xs font-mono">Ctrl</kbd>
-                      </>
-                    ) : (
-                      <>
-                        Hold <kbd className="px-1.5 py-0.5 bg-white border border-gray-300 rounded text-xs font-mono">Ctrl</kbd> to speak
-                      </>
-                    )}
-                  </span>
-                </div>
-
-                <motion.div
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                >
-                  <Button
-                    onClick={handleSave}
-                    variant="outline"
-                    className="flex items-center gap-2"
-                    disabled={isSaving}
-                  >
-                    {isSaving ? (
-                      <>
-                        <RefreshCw className="h-4 w-4 animate-spin" />
-                        Saving...
-                      </>
-                    ) : (
-                      <>
-                        <Save className="h-4 w-4" />
-                        Save
+                        Start Continuous Voice Input
                       </>
                     )}
                   </Button>
