@@ -3,18 +3,21 @@ import { getCookie } from "cookies-next";
 import { useRouter } from "next/router";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Home, Edit2, Check, X } from "lucide-react";
+import { Home, Edit2, Check, X, Menu, Users } from "lucide-react";
 import axios from "axios";
 import toast from "react-hot-toast";
+import { motion } from "framer-motion";
 
 interface HeaderProps {
   roomName?: string;
   roomId?: string;
   role?: string;
   onRoomNameUpdate?: (newName: string) => void;
+  showSidebar?: boolean;
+  onToggleSidebar?: () => void;
 }
 
-export default function Header({ roomName, roomId, role, onRoomNameUpdate }: HeaderProps) {
+export default function Header({ roomName, roomId, role, onRoomNameUpdate, showSidebar, onToggleSidebar }: HeaderProps) {
   const [username, setUsername] = useState<string | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [editingName, setEditingName] = useState(roomName || "");
@@ -70,15 +73,39 @@ export default function Header({ roomName, roomId, role, onRoomNameUpdate }: Hea
 
   return (
     <div className="bg-white border-b border-gray-200 py-3 px-4 flex items-center justify-between shadow-sm">
-      <Button
-        variant="outline"
-        size="sm"
-        onClick={() => router.push("/dashboard")}
-        className="flex items-center gap-2"
-      >
-        <Home className="h-4 w-4" />
-        <span className="hidden sm:inline">Dashboard</span>
-      </Button>
+      <div className="flex items-center gap-2">
+        {/* Menu Toggle Button */}
+        {onToggleSidebar && (
+          <motion.div
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+          >
+            <Button
+              onClick={onToggleSidebar}
+              size="sm"
+              className={`flex items-center gap-2 ${showSidebar
+                ? "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                : "bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white"
+                }`}
+              variant={showSidebar ? "outline" : "default"}
+            >
+              <Menu className="h-4 w-4" />
+              <span className="hidden sm:inline">Menu</span>
+              <Users className="h-4 w-4" />
+            </Button>
+          </motion.div>
+        )}
+
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => router.push("/dashboard")}
+          className="flex items-center gap-2"
+        >
+          <Home className="h-4 w-4" />
+          <span className="hidden sm:inline">Dashboard</span>
+        </Button>
+      </div>
 
       <div className="flex items-center gap-3">
         {roomName && (

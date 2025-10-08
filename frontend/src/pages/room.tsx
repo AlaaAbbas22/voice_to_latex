@@ -9,7 +9,7 @@ import Content from "@/components/Content";
 import axios from "axios";
 import { getCookie } from "cookies-next";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, Loader2, Menu, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "react-hot-toast";
 import Head from "next/head";
@@ -151,18 +151,35 @@ export default function Room() {
           roomName={roomName}
           roomId={roomId}
           role={role}
+          showSidebar={showSidebar}
+          onToggleSidebar={toggleSidebar}
           onRoomNameUpdate={handleRoomNameUpdate}
         />
 
-        <div className="flex flex-1 h-full w-full relative">
+        <div className="flex flex-1 h-full w-full relative overflow-hidden">
+          {/* Backdrop overlay */}
           <AnimatePresence>
             {showSidebar && (
               <motion.div
-                initial={{ x: -300, opacity: 0 }}
-                animate={{ x: 0, opacity: 1 }}
-                exit={{ x: -300, opacity: 0 }}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.2 }}
+                className="absolute inset-0 bg-black/50 z-30"
+                onClick={() => setShowSidebar(false)}
+              />
+            )}
+          </AnimatePresence>
+
+          {/* Sidebar overlay */}
+          <AnimatePresence>
+            {showSidebar && (
+              <motion.div
+                initial={{ x: -320 }}
+                animate={{ x: 0 }}
+                exit={{ x: -320 }}
                 transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                className="h-full w-80 absolute md:relative z-10"
+                className="h-full w-80 absolute left-0 top-0 z-40 shadow-2xl"
               >
                 <Sidebar
                   connected={connected}
@@ -173,33 +190,8 @@ export default function Room() {
             )}
           </AnimatePresence>
 
-          <motion.div
-            className="flex-1 flex flex-col relative"
-            animate={{
-              marginLeft: showSidebar ? "0px" : "0px",
-              width: showSidebar ? "calc(100% - 320px)" : "100%",
-            }}
-            transition={{ type: "spring", stiffness: 300, damping: 30 }}
-          >
-            <motion.div
-              className="absolute top-4 left-4 z-20"
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-            >
-              <Button
-                onClick={toggleSidebar}
-                variant="outline"
-                size="icon"
-                className="rounded-full shadow-lg bg-white border-indigo-200 hover:bg-indigo-50 hover:border-indigo-300"
-              >
-                {showSidebar ? (
-                  <ChevronLeft className="h-5 w-5 text-indigo-600" />
-                ) : (
-                  <ChevronRight className="h-5 w-5 text-indigo-600" />
-                )}
-              </Button>
-            </motion.div>
-
+          {/* Main content - always full width */}
+          <div className="flex-1 flex flex-col w-full">
             <div className="flex-1 p-4 md:p-8">
               <Content
                 text={text}
@@ -210,7 +202,7 @@ export default function Room() {
                 role={role}
               />
             </div>
-          </motion.div>
+          </div>
         </div>
 
         <Footer />
