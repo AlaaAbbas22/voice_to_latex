@@ -5,7 +5,7 @@ import {
   useEffect,
   useRef,
   useState,
-  useCallback,
+  useMemo,
 } from "react";
 import LatexDisplayer from "./Latex";
 import SpeechRecognition, {
@@ -25,15 +25,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
 import {
   Mic,
   MicOff,
-  Save,
   Copy,
-  RefreshCw,
   BookOpen,
   Download,
 } from "lucide-react";
 import { toast } from "react-hot-toast";
 import RecordingManager, { TranscriptionMethod } from "../utils/recording";
 import { TranscriptionToggle } from "./TranscriptionToggle";
+import { copyToClipboard, downloadLatexAsPDF, debounce } from "@/lib/utils";
 
 interface Props {
   text: string;
@@ -172,31 +171,23 @@ export default function Content({
     };
   }, [isPushToTalkActive]);
 
-  // Debounced socket emission
-  const debouncedEmitText = useCallback(
-    (() => {
-      let timeout: NodeJS.Timeout;
-      return (newText: string) => {
-        clearTimeout(timeout);
-        timeout = setTimeout(() => {
-          if (socket && socket.connected) {
-            socket.emit("send-text", newText, router.asPath.split("#")[1]);
-          }
-        }, 800);
-      };
-    })(),
+  // Debounced socket emission using utility function
+  const debouncedEmitText = useMemo(
+    () =>
+      debounce((newText: string) => {
+        if (socket && socket.connected) {
+          socket.emit("send-text", newText, router.asPath.split("#")[1]);
+        }
+      }, 800),
     [socket, router],
   );
 
-
   const handleCopyLatex = () => {
-    navigator.clipboard.writeText(latex);
-    toast.success("LaTeX code copied to clipboard");
+    copyToClipboard(latex, "LaTeX code copied to clipboard");
   };
 
   const handleDownloadPDF = () => {
-    // This would be replaced with actual PDF generation and download
-    toast.success("PDF download started");
+    downloadLatexAsPDF(latex);
   };
 
   const containerVariants = {
