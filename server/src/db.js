@@ -31,15 +31,6 @@ const userSchema = new mongoose.Schema({
 
 const User = mongoose.model("User", userSchema);
 
-// Session Schema
-const sessionSchema = new mongoose.Schema({
-  sessionId: { type: String, required: true, unique: true },
-  userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
-  expiresAt: { type: Date, required: true },
-});
-
-const Session = mongoose.model("Session", sessionSchema);
-
 // Room Schema (Tracks who created it, editors, and viewers)
 const roomSchema = new mongoose.Schema({
   name: { type: String, required: true },
@@ -56,4 +47,4 @@ const roomSchema = new mongoose.Schema({
 
 const Room = mongoose.model("Room", roomSchema);
 
-module.exports = { connectDB, User, Session, Room };
+module.exports = { connectDB, User, Room };
