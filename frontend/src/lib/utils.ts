@@ -7,6 +7,31 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 /**
+ * Format LaTeX string with proper environment for line breaks
+ * @param latex - Raw LaTeX string
+ * @param displayMode - Whether to use display mode delimiters (\\[ \\]) or inline ($$ $$)
+ * @returns Formatted LaTeX string
+ */
+export function formatLatex(
+  latex: string,
+  displayMode: "display" | "inline" = "inline"
+): string {
+  const hasLineBreaks = latex.includes("\\\\");
+
+  if (displayMode === "display") {
+    // For print/PDF output using \[ \]
+    return hasLineBreaks
+      ? `\\[\\begin{gathered}${latex}\\end{gathered}\\]`
+      : `\\[${latex}\\]`;
+  } else {
+    // For inline display using $$ $$
+    return hasLineBreaks
+      ? `$$\\begin{gathered}${latex}\\end{gathered}$$`
+      : `$$${latex}$$`;
+  }
+}
+
+/**
  * Copy text to clipboard and show a success toast
  */
 export function copyToClipboard(
@@ -58,11 +83,7 @@ export function downloadLatexAsPDF(latex: string) {
       </head>
       <body>
         <div class="math-content">
-          ${
-            latex.includes("\\\\")
-              ? `\\[\\begin{gathered}${latex}\\end{gathered}\\]`
-              : `\\[${latex}\\]`
-          }
+          ${formatLatex(latex, "display")}
         </div>
         <script>
           window.MathJax = {
