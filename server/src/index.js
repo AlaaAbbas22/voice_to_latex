@@ -57,10 +57,15 @@ const sessionMiddleware = session({
   store: sessionStore,
   cookie: {
     maxAge: 14 * 24 * 60 * 60 * 1000, // 14 days in milliseconds
-    httpOnly: false,
+    httpOnly: process.env.ENVIRONMENT !== "DEV" ? true : false,
     sameSite: process.env.ENVIRONMENT !== "DEV" ? "none" : undefined,
+    secure: process.env.ENVIRONMENT !== "DEV" ? true : undefined,
   },
 });
+
+if (process.env.ENVIRONMENT !== "DEV") {
+  app.set("trust proxy", 1);
+}
 
 app.use(sessionMiddleware);
 
