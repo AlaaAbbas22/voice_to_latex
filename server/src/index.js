@@ -29,7 +29,8 @@ app.use(
       // Allow Chrome extension and frontend domains
       if (
         origin.startsWith("chrome-extension://") ||
-        origin.startsWith("http://")
+        origin.startsWith("http://") ||
+        origin.startsWith("https://")
       ) {
         return callback(null, true);
       }
