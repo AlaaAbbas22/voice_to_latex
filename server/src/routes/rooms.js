@@ -84,10 +84,9 @@ router.post("/rooms/:roomId/addUser", requireAuth, async (req, res) => {
   if (!room) return res.status(404).json({ error: "Room not found" });
   if (!user) return res.status(404).json({ error: "User not found" });
 
-  if (!room.createdBy.equals(req.session.userId)) {
-    return res
-      .status(403)
-      .json({ error: "Only the room creator can add users" });
+  const isEditor = room.editors.some((id) => id.equals(req.session.userId));
+  if (!isEditor) {
+    return res.status(403).json({ error: "Only editors can add users" });
   }
 
   if (role === "editor") {

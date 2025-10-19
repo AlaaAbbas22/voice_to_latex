@@ -32,6 +32,7 @@
     "eslint": "^8.52.0",
     "eslint-config-next": "^15.2.0",
     "framer-motion": "^12.6.5",
+    "lodash": "^4.17.21",
     "lucide-react": "^0.487.0",
     "media-recorder-stream": "^2.2.0",
     "next": "^15.2.0",
@@ -52,9 +53,11 @@
     "tailwind-merge": "^3.2.0",
     "tailwindcss": "3.3.3",
     "tailwindcss-animate": "^1.0.7",
+    "tldraw": "^2.4.6",
     "typescript": "5.1.6"
   },
   "devDependencies": {
+    "@types/lodash": "^4.14.202",
     "@types/react-speech-recognition": "^3.9.6",
     "@types/recordrtc": "^5.6.14"
   }

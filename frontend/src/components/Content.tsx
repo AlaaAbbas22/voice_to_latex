@@ -6,6 +6,7 @@ import {
   useRef,
   useState,
   useMemo,
+  useLayoutEffect,
 } from "react";
 import LatexDisplayer from "./Latex";
 import SpeechRecognition, {
@@ -21,6 +22,8 @@ import {
   CardTitle,
   CardDescription,
 } from "./ui/card";
+import { getCookie } from "cookies-next";
+
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
 import {
   Mic,
@@ -28,11 +31,22 @@ import {
   Copy,
   BookOpen,
   Download,
+  Pencil,
+  Type,
 } from "lucide-react";
 import { toast } from "react-hot-toast";
 import RecordingManager, { TranscriptionMethod } from "../utils/recording";
 import { TranscriptionToggle } from "./TranscriptionToggle";
 import { copyToClipboard, downloadLatexAsPDF, debounce } from "@/lib/utils";
+import { throttle } from "lodash";
+import {
+  DefaultSpinner,
+  Tldraw,
+  createTLStore,
+  getSnapshot,
+  loadSnapshot,
+} from "tldraw";
+import "tldraw/tldraw.css";
 
 interface Props {
   text: string;
@@ -59,6 +73,15 @@ export default function Content({
   const { transcript, resetTranscript, browserSupportsSpeechRecognition } =
     useSpeechRecognition();
 
+  // Tldraw state
+  const [inputMode, setInputMode] = useState<"text" | "drawing">("text");
+  const store = useMemo(() => createTLStore(), []);
+  const [drawingLoadingState, setDrawingLoadingState] = useState<
+    { status: "loading" } | { status: "ready" } | { status: "error"; error: string }
+  >({
+    status: "loading",
+  });
+
   // Initialize recording manager (client-side only)
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -80,6 +103,49 @@ export default function Content({
   useEffect(() => {
     debouncedEmitText(text);
   }, [text]);
+
+  // Tldraw persistence and socket handling
+  useLayoutEffect(() => {
+    setDrawingLoadingState({ status: "loading" });
+
+    // Listen for drawing data from socket
+    if (socket) {
+      socket.on("receive-drawing", (data: string, username: string) => {
+        if (username === getCookie("username")) return;
+        if (data) {
+          console.log(data)
+          try {
+            const snapshot = JSON.parse(data);
+            loadSnapshot(store, snapshot);
+          } catch (error: any) {
+            console.error("Error loading drawing:", error);
+            setDrawingLoadingState({ status: "error", error: error.message });
+          }
+        } else {
+        }
+      });
+    }
+
+    setDrawingLoadingState({ status: "ready" });
+
+    // Setup store listener to emit changes to server
+    const cleanupFn = store.listen(
+      throttle(() => {
+        const snapshot = getSnapshot(store);
+        const snapshotString = JSON.stringify(snapshot);
+        if (socket && socket.connected) {
+          socket.emit("send-drawing", snapshotString, router.asPath.split("#")[1]);
+        }
+      }, 500)
+    );
+
+    return () => {
+      cleanupFn();
+      if (socket) {
+        socket.off("receive-drawing");
+      }
+    };
+  }, [store, socket, router]);
 
   // Handle browser speech recognition for browser method
   useEffect(() => {
@@ -285,81 +351,132 @@ export default function Content({
         <motion.div variants={itemVariants} className="flex-1 min-w-0">
           <Card className="h-full flex flex-col">
             <CardHeader className="pb-2">
-              <CardTitle>LaTeX Editor</CardTitle>
-              <CardDescription>
-                Type or use voice input to create LaTeX equations
-              </CardDescription>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>
+                    {inputMode === "text" ? "LaTeX Editor" : "Drawing Board"}
+                  </CardTitle>
+                  <CardDescription>
+                    {inputMode === "text"
+                      ? "Type or use voice input to create LaTeX equations"
+                      : "Draw diagrams and illustrations"}
+                  </CardDescription>
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    onClick={() => setInputMode("text")}
+                    variant={inputMode === "text" ? "default" : "outline"}
+                    size="sm"
+                    className="flex items-center gap-2"
+                  >
+                    <Type className="h-4 w-4" />
+                    Text
+                  </Button>
+                  <Button
+                    onClick={() => setInputMode("drawing")}
+                    variant={inputMode === "drawing" ? "default" : "outline"}
+                    size="sm"
+                    className="flex items-center gap-2"
+                  >
+                    <Pencil className="h-4 w-4" />
+                    Draw
+                  </Button>
+                </div>
+              </div>
             </CardHeader>
             <CardContent className="flex-1 flex flex-col">
-              <Textarea
-                ref={textareaRef}
-                className="w-full flex-1 text-lg resize-none font-mono"
-                value={text}
-                onChange={(e) => {
-                  setText(e.target.value);
-                }}
-                placeholder="Start typing here or use voice input..."
-              />
+              {inputMode === "text" ? (
+                <>
+                  <Textarea
+                    ref={textareaRef}
+                    className="w-full flex-1 text-lg resize-none font-mono"
+                    value={text}
+                    onChange={(e) => {
+                      setText(e.target.value);
+                    }}
+                    placeholder="Start typing here or use voice input..."
+                  />
 
-              <div className="flex flex-col gap-3 mt-4">
-                <motion.div
-                  className={`flex items-center justify-center gap-3 px-6 py-4 rounded-lg text-base font-medium transition-all duration-200 ${isPushToTalkActive
-                    ? "bg-gradient-to-r from-red-500 to-pink-500 text-white shadow-lg scale-105"
-                    : "bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-md hover:shadow-lg hover:scale-[1.02]"
-                    }`}
-                  whileHover={{ scale: isPushToTalkActive ? 1.05 : 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                >
-                  <Mic className={`h-5 w-5 ${isPushToTalkActive ? "animate-pulse" : ""}`} />
-                  <span>
-                    {isPushToTalkActive ? (
-                      <>
-                        <span className="font-bold">🎙️ Recording...</span> Release{" "}
-                        <kbd className="px-2 py-1 bg-white/20 border border-white/30 rounded text-sm font-mono ml-1">
-                          Ctrl
-                        </kbd>
-                      </>
-                    ) : (
-                      <>
-                        <span className="font-semibold">Press & Hold</span>{" "}
-                        <kbd className="px-2 py-1 bg-white/20 border border-white/30 rounded text-sm font-mono mx-1">
-                          Ctrl
-                        </kbd>{" "}
-                        <span className="font-semibold">to Speak</span>
-                      </>
-                    )}
-                  </span>
-                </motion.div>
+                  <div className="flex flex-col gap-3 mt-4">
+                    <motion.div
+                      className={`flex items-center justify-center gap-3 px-6 py-4 rounded-lg text-base font-medium transition-all duration-200 ${isPushToTalkActive
+                        ? "bg-gradient-to-r from-red-500 to-pink-500 text-white shadow-lg scale-105"
+                        : "bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-md hover:shadow-lg hover:scale-[1.02]"
+                        }`}
+                      whileHover={{ scale: isPushToTalkActive ? 1.05 : 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                    >
+                      <Mic className={`h-5 w-5 ${isPushToTalkActive ? "animate-pulse" : ""}`} />
+                      <span>
+                        {isPushToTalkActive ? (
+                          <>
+                            <span className="font-bold">🎙️ Recording...</span> Release{" "}
+                            <kbd className="px-2 py-1 bg-white/20 border border-white/30 rounded text-sm font-mono ml-1">
+                              Ctrl
+                            </kbd>
+                          </>
+                        ) : (
+                          <>
+                            <span className="font-semibold">Press & Hold</span>{" "}
+                            <kbd className="px-2 py-1 bg-white/20 border border-white/30 rounded text-sm font-mono mx-1">
+                              Ctrl
+                            </kbd>{" "}
+                            <span className="font-semibold">to Speak</span>
+                          </>
+                        )}
+                      </span>
+                    </motion.div>
 
-                <div className="flex items-center gap-2">
-                  <div className="flex-1 border-t border-gray-300"></div>
-                  <span className="text-xs text-gray-500 uppercase tracking-wide">or</span>
-                  <div className="flex-1 border-t border-gray-300"></div>
+                    <div className="flex items-center gap-2">
+                      <div className="flex-1 border-t border-gray-300"></div>
+                      <span className="text-xs text-gray-500 uppercase tracking-wide">or</span>
+                      <div className="flex-1 border-t border-gray-300"></div>
+                    </div>
+
+                    <motion.div
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                    >
+                      <Button
+                        onClick={recording ? stopRecording : startRecording}
+                        variant={recording ? "destructive" : "outline"}
+                        className="w-full flex items-center justify-center gap-2"
+                      >
+                        {recording ? (
+                          <>
+                            <MicOff className="h-4 w-4" />
+                            Stop Continuous Recording
+                          </>
+                        ) : (
+                          <>
+                            <Mic className="h-4 w-4" />
+                            Start Continuous Voice Input
+                          </>
+                        )}
+                      </Button>
+                    </motion.div>
+                  </div>
+                </>
+              ) : (
+                <div className="flex-1 w-full h-full min-h-[500px]">
+                  {drawingLoadingState.status === "loading" && (
+                    <div className="flex items-center justify-center h-full">
+                      <DefaultSpinner />
+                    </div>
+                  )}
+                  {drawingLoadingState.status === "error" && (
+                    <div className="flex flex-col items-center justify-center h-full">
+                      <h2 className="text-xl font-bold text-red-600">Error!</h2>
+                      <p className="text-gray-600">{drawingLoadingState.error}</p>
+                    </div>
+                  )}
+                  {drawingLoadingState.status === "ready" && (
+                    <div className="w-full h-full">
+                      <Tldraw store={store} />
+                    </div>
+                  )}
                 </div>
-
-                <motion.div
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                >
-                  <Button
-                    onClick={recording ? stopRecording : startRecording}
-                    variant={recording ? "destructive" : "outline"}
-                    className="w-full flex items-center justify-center gap-2"
-                  >
-                    {recording ? (
-                      <>
-                        <MicOff className="h-4 w-4" />
-                        Stop Continuous Recording
-                      </>
-                    ) : (
-                      <>
-                        <Mic className="h-4 w-4" />
-                        Start Continuous Voice Input
-                      </>
-                    )}
-                  </Button>
-                </motion.div>
-              </div>
+              )}
             </CardContent>
           </Card>
         </motion.div>

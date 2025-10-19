@@ -62,7 +62,7 @@ module.exports = function setupSocketConnection(io, sessionStore) {
       ) {
         return socket.emit(
           "error",
-          "You don't have permission to edit this room",
+          "You don't have permission to edit this room"
         );
       }
 
@@ -80,10 +80,41 @@ module.exports = function setupSocketConnection(io, sessionStore) {
       await roomDoc.save();
     });
 
+    // Send Drawing (Only authenticated users can send)
+    socket.on("send-drawing", async (data, room, sessionId) => {
+      // Try to get session from sessionId if provided
+      if (sessionId) {
+        await updateSessionFromId(sessionId);
+      }
+
+      const currentSession = getCurrentSession();
+      if (!currentSession || !currentSession.userId) {
+        return socket.emit("error", "Not authenticated");
+      }
+
+      let roomDoc = await Room.findOne({ _id: room });
+      if (
+        !roomDoc ||
+        !roomDoc.editors.some((id) => id.equals(currentSession.userId))
+      ) {
+        return socket.emit(
+          "error",
+          "You don't have permission to edit this room"
+        );
+      }
+
+      // Broadcast drawing changes to all other users in the room
+      socket.broadcast
+        .to(room)
+        .emit("receive-drawing", data, currentSession.username);
+
+      // Save the drawing data to the database
+      roomDoc.tldraw = data;
+      await roomDoc.save();
+    });
+
     // Join Room
     socket.on("join-room", async (roomId) => {
-
-
       const currentSession = getCurrentSession();
       if (!currentSession || !currentSession.username) {
         return socket.emit("error", "Not authenticated");
@@ -96,10 +127,10 @@ module.exports = function setupSocketConnection(io, sessionStore) {
 
       // Check if user is an editor or viewer
       const isEditor = room.editors.some((id) =>
-        id.equals(currentSession.userId),
+        id.equals(currentSession.userId)
       );
       const isViewer = room.viewers.some((id) =>
-        id.equals(currentSession.userId),
+        id.equals(currentSession.userId)
       );
 
       if (!isEditor && !isViewer) {
@@ -109,6 +140,7 @@ module.exports = function setupSocketConnection(io, sessionStore) {
       socket.join(roomId);
       socket.emit("receive-original", room.content, "");
       socket.emit("receive-text", room.latex);
+      socket.emit("receive-drawing", room.tldraw, "");
     });
 
     // Helper function to update session from sessionId
