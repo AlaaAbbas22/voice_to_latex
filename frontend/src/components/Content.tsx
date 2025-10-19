@@ -38,7 +38,6 @@ import { toast } from "react-hot-toast";
 import RecordingManager, { TranscriptionMethod } from "../utils/recording";
 import { TranscriptionToggle } from "./TranscriptionToggle";
 import { copyToClipboard, downloadLatexAsPDF, debounce } from "@/lib/utils";
-import { throttle } from "lodash";
 import {
   DefaultSpinner,
   Tldraw,
@@ -84,6 +83,7 @@ export default function Content({
   });
   const isLoadingFromSocket = useRef(false);
   const editorRef = useRef<any>(null);
+  const lastEmittedSnapshotRef = useRef<string>("");
 
   // Initialize recording manager (client-side only)
   useEffect(() => {
@@ -92,7 +92,11 @@ export default function Content({
         method: transcriptionMethod,
         onChunkTranscribed: (transcribedText) => {
           if (transcribedText.trim()) {
-            setText((prev) => prev + " " + transcribedText);
+            setText((prev) => {
+              const newText = prev + " " + transcribedText;
+              debouncedEmitText(newText);
+              return newText;
+            });
           }
         },
         onError: (error) => {
@@ -102,10 +106,6 @@ export default function Content({
       });
     }
   }, [transcriptionMethod, setText]);
-
-  useEffect(() => {
-    debouncedEmitText(text);
-  }, [text]);
 
   // Tldraw persistence and socket handling
   useLayoutEffect(() => {
@@ -121,10 +121,12 @@ export default function Content({
             isLoadingFromSocket.current = true;
             const snapshot = JSON.parse(data);
             loadSnapshot(store, snapshot);
+            // Update last emitted snapshot so we don't re-emit what we just received
+            lastEmittedSnapshotRef.current = data;
             // Reset flag after a short delay to ensure store listener doesn't fire
             setTimeout(() => {
               isLoadingFromSocket.current = false;
-            }, 100);
+            }, 200);
           } catch (error: any) {
             console.error("Error loading drawing:", error);
             setDrawingLoadingState({ status: "error", error: error.message });
@@ -136,26 +138,39 @@ export default function Content({
 
     setDrawingLoadingState({ status: "ready" });
 
-    // Setup store listener to emit changes to server
-    const cleanupFn = store.listen(
-      throttle(async () => {
-        // Don't emit if we're currently loading from socket
-        if (isLoadingFromSocket.current) {
-          return;
-        }
+    // Setup store listener to emit changes to server with debounce
+    const debouncedEmitDrawing = debounce(async () => {
+      // Don't emit if we're currently loading from socket
+      if (isLoadingFromSocket.current) {
+        console.log("Skipping emit - loading from socket");
+        return;
+      }
 
-        const snapshot = getSnapshot(store);
-        const snapshotString = JSON.stringify(snapshot);
+      const snapshot = getSnapshot(store);
+      const snapshotString = JSON.stringify(snapshot);
 
-        if (socket && socket.connected) {
-          // Export drawing as image for LaTeX conversion
-          const imageData = await exportDrawingAsImage();
+      // Only emit if snapshot actually changed
+      if (snapshotString === lastEmittedSnapshotRef.current) {
+        console.log("Skipping emit - no changes");
+        return;
+      }
 
-          // Send both drawing data and image data in one event
-          socket.emit("send-drawing", snapshotString, router.asPath.split("#")[1], null, imageData);
-        }
-      }, 500)
-    );
+      if (socket && socket.connected) {
+        console.log("Sending drawing");
+        // Export drawing as image for LaTeX conversion
+        const imageData = await exportDrawingAsImage();
+
+        // Send both drawing data and image data in one event
+        socket.emit("send-drawing", snapshotString, router.asPath.split("#")[1], null, imageData);
+
+        // Update last emitted snapshot
+        lastEmittedSnapshotRef.current = snapshotString;
+      }
+    }, 1000);
+
+    const cleanupFn = store.listen(() => {
+      debouncedEmitDrawing();
+    });
 
     // Function to export drawing as image
     const exportDrawingAsImage = async () => {
@@ -195,6 +210,7 @@ export default function Content({
 
     return () => {
       cleanupFn();
+      debouncedEmitDrawing.cancel();
       if (socket) {
         socket.off("receive-drawing");
       }
@@ -204,7 +220,11 @@ export default function Content({
   // Handle browser speech recognition for browser method
   useEffect(() => {
     if (transcript && transcriptionMethod === "browser") {
-      setText((prev) => prev + " " + transcript);
+      setText((prev) => {
+        const newText = prev + " " + transcript;
+        debouncedEmitText(newText);
+        return newText;
+      });
       resetTranscript();
     }
   }, [transcript, setText, resetTranscript, transcriptionMethod]);
@@ -446,7 +466,9 @@ export default function Content({
                     className="w-full flex-1 text-lg resize-none font-mono"
                     value={text}
                     onChange={(e) => {
-                      setText(e.target.value);
+                      const newText = e.target.value;
+                      setText(newText);
+                      debouncedEmitText(newText);
                     }}
                     placeholder="Start typing here or use voice input..."
                   />
