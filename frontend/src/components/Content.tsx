@@ -210,7 +210,6 @@ export default function Content({
 
     return () => {
       cleanupFn();
-      debouncedEmitDrawing.cancel();
       if (socket) {
         socket.off("receive-drawing");
       }
