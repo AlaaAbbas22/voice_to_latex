@@ -1,5 +1,5 @@
 const { Room } = require("./db");
-const { llmResponse } = require("./utils");
+const { llmResponse, imageToLatex } = require("./utils");
 
 module.exports = function setupSocketConnection(io, sessionStore) {
   io.on("connection", async (socket) => {
@@ -81,7 +81,7 @@ module.exports = function setupSocketConnection(io, sessionStore) {
     });
 
     // Send Drawing (Only authenticated users can send)
-    socket.on("send-drawing", async (data, room, sessionId) => {
+    socket.on("send-drawing", async (data, room, sessionId, imageData) => {
       // Try to get session from sessionId if provided
       if (sessionId) {
         await updateSessionFromId(sessionId);
@@ -110,6 +110,22 @@ module.exports = function setupSocketConnection(io, sessionStore) {
 
       // Save the drawing data to the database
       roomDoc.tldraw = data;
+
+      // If image data is provided, convert it to LaTeX
+      if (imageData) {
+        try {
+          const processedLatex = await imageToLatex(imageData);
+
+          // Broadcast the LaTeX to all users in the room (including sender)
+          io.in(room).emit("receive-text", processedLatex);
+
+          // Save the LaTeX to the database
+          roomDoc.latex = processedLatex;
+        } catch (error) {
+          console.error("Error converting image to LaTeX:", error);
+        }
+      }
+
       await roomDoc.save();
     });
 

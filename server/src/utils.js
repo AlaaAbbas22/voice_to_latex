@@ -24,4 +24,39 @@ async function llmResponse(message) {
   return response;
 }
 
-module.exports = { llmResponse };
+async function imageToLatex(base64Image) {
+  try {
+    // Extract base64 data from data URL if present
+    const base64Data = base64Image.includes(",")
+      ? base64Image.split(",")[1]
+      : base64Image;
+
+    const response = await groq.chat.completions.create({
+      messages: [
+        {
+          role: "user",
+          content: [
+            {
+              type: "text",
+              text: "Convert this drawing/diagram to LaTeX code. If it contains mathematical equations, convert them to LaTeX math notation. If it's a diagram, describe it using LaTeX/TikZ if possible, otherwise provide a textual description in LaTeX. Return ONLY the inner LaTeX code without any surrounding dollar signs or explanation.",
+            },
+            {
+              type: "image_url",
+              image_url: {
+                url: base64Image,
+              },
+            },
+          ],
+        },
+      ],
+      model: "meta-llama/llama-4-maverick-17b-128e-instruct",
+      max_tokens: 1000,
+    });
+    return response.choices[0]?.message?.content || "";
+  } catch (error) {
+    console.error("Error processing image with Groq Vision:", error);
+    return "% Error: Could not process image";
+  }
+}
+
+module.exports = { llmResponse, imageToLatex };

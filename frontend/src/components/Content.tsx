@@ -45,6 +45,7 @@ import {
   createTLStore,
   getSnapshot,
   loadSnapshot,
+  exportToBlob,
 } from "tldraw";
 import "tldraw/tldraw.css";
 
@@ -81,6 +82,8 @@ export default function Content({
   >({
     status: "loading",
   });
+  const isLoadingFromSocket = useRef(false);
+  const editorRef = useRef<any>(null);
 
   // Initialize recording manager (client-side only)
   useEffect(() => {
@@ -113,15 +116,20 @@ export default function Content({
       socket.on("receive-drawing", (data: string, username: string) => {
         if (username === getCookie("username")) return;
         if (data) {
-          console.log(data)
           try {
+            // Set flag to prevent emitting back to server
+            isLoadingFromSocket.current = true;
             const snapshot = JSON.parse(data);
             loadSnapshot(store, snapshot);
+            // Reset flag after a short delay to ensure store listener doesn't fire
+            setTimeout(() => {
+              isLoadingFromSocket.current = false;
+            }, 100);
           } catch (error: any) {
             console.error("Error loading drawing:", error);
             setDrawingLoadingState({ status: "error", error: error.message });
+            isLoadingFromSocket.current = false;
           }
-        } else {
         }
       });
     }
@@ -130,14 +138,60 @@ export default function Content({
 
     // Setup store listener to emit changes to server
     const cleanupFn = store.listen(
-      throttle(() => {
+      throttle(async () => {
+        // Don't emit if we're currently loading from socket
+        if (isLoadingFromSocket.current) {
+          return;
+        }
+
         const snapshot = getSnapshot(store);
         const snapshotString = JSON.stringify(snapshot);
+
         if (socket && socket.connected) {
-          socket.emit("send-drawing", snapshotString, router.asPath.split("#")[1]);
+          // Export drawing as image for LaTeX conversion
+          const imageData = await exportDrawingAsImage();
+
+          // Send both drawing data and image data in one event
+          socket.emit("send-drawing", snapshotString, router.asPath.split("#")[1], null, imageData);
         }
       }, 500)
     );
+
+    // Function to export drawing as image
+    const exportDrawingAsImage = async () => {
+      try {
+        if (!editorRef.current) {
+          return null;
+        }
+
+        const editor = editorRef.current;
+        const shapeIds = editor.getCurrentPageShapeIds();
+
+        if (shapeIds.size === 0) {
+          // No shapes to export, skip
+          return null;
+        }
+
+        const blob = await exportToBlob({
+          editor,
+          ids: Array.from(shapeIds),
+          format: "png",
+          opts: { background: true, padding: 16, scale: 2 },
+        });
+
+        // Convert blob to base64
+        return new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.readAsDataURL(blob);
+          reader.onloadend = () => {
+            resolve(reader.result);
+          };
+        });
+      } catch (error) {
+        console.error("Error exporting drawing:", error);
+        return null;
+      }
+    };
 
     return () => {
       cleanupFn();
@@ -472,7 +526,12 @@ export default function Content({
                   )}
                   {drawingLoadingState.status === "ready" && (
                     <div className="w-full h-full">
-                      <Tldraw store={store} />
+                      <Tldraw
+                        store={store}
+                        onMount={(editor) => {
+                          editorRef.current = editor;
+                        }}
+                      />
                     </div>
                   )}
                 </div>
