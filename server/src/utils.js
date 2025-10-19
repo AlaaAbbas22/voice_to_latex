@@ -38,7 +38,7 @@ async function imageToLatex(base64Image) {
           content: [
             {
               type: "text",
-              text: "Convert this drawing/diagram to LaTeX code. If it contains mathematical equations, convert them to LaTeX math notation. If it's a diagram, describe it using LaTeX/TikZ if possible, otherwise provide a textual description in LaTeX. Return ONLY the inner LaTeX code without any surrounding dollar signs or explanation.",
+              text: "Convert this handwritten mathematical image to LaTeX code. Focus on accurately converting any handwritten equations, formulas, or mathematical notation to proper LaTeX syntax. DO NOT use TikZ or tikzpicture environment. DO NOT use any unknown environments. If there are diagrams, describe them in plain text within the LaTeX. Return ONLY the inner LaTeX code without any surrounding dollar signs, explanation, or markdown formatting.",
             },
             {
               type: "image_url",
