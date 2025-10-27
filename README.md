@@ -22,7 +22,7 @@ cd server
 
 2. Install dependencies:
 ```bash
-npm install
+npm install --force
 ```
 
 3. Create a .env file in the server directory with the following:
