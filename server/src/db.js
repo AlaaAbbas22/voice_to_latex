@@ -41,6 +41,7 @@ const roomSchema = new mongoose.Schema({
   },
   content: { type: String, default: "" },
   latex: { type: String, default: "" },
+  tldraw: { type: String, default: "" },
   editors: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
   viewers: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
 });
