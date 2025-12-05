@@ -3,7 +3,10 @@ require("dotenv").config();
 
 const groq = new Groq({ apiKey: process.env.key });
 
-async function getGroqChatCompletion(input) {
+// Cache for storing previous conversions to make responses deterministic
+const conversionCache = new Map();
+
+async function getGroqChatCompletion(input, options = {}) {
   return (
     await groq.chat.completions.create({
       messages: [
@@ -13,6 +16,8 @@ async function getGroqChatCompletion(input) {
         },
       ],
       model: "openai/gpt-oss-120b",
+      temperature: options.temperature || 0, // Set to 0 for deterministic output
+      seed: options.seed || 42, // Consistent seed for reproducibility
     })
   ).choices[0]?.message?.content;
 }
@@ -23,10 +28,30 @@ async function llmResponse(message) {
     return "";
   }
 
+  // Check cache first for deterministic responses
+  const cacheKey = message.trim();
+  if (conversionCache.has(cacheKey)) {
+    console.log("Cache hit for:", cacheKey.substring(0, 50));
+    return conversionCache.get(cacheKey);
+  }
+
   const response = await getGroqChatCompletion(
-    `Convert this text to latex. Return the plain inner latex code only and make sure to break the line using double backslash wherever it is broken in the input. ONLY CONVERT THE GIVEN TEXT TO LATEX AND DO NOT ADD ANYTHING TO THE CONTENT AND MAKE SURE THE LATEX IS NOT SURROUNDED BY A SINGLE DOLLAR SIGN with a space before the dollar sign. If there is no meaningful content to convert, return an empty string. \n${message}`
+    `Convert this text to latex. Return the plain inner latex code only and make sure to break the line using double backslash wherever it is broken in the input. ONLY CONVERT THE GIVEN TEXT TO LATEX AND DO NOT ADD ANYTHING TO THE CONTENT AND MAKE SURE THE LATEX IS NOT SURROUNDED BY A SINGLE DOLLAR SIGN with a space before the dollar sign. If there is no meaningful content to convert, return an empty string. \n${message}`,
+    { temperature: 0, seed: 42 } // Deterministic settings
   );
-  return response || "";
+
+  const result = response || "";
+
+  // Store in cache for future use
+  conversionCache.set(cacheKey, result);
+
+  // Limit cache size to prevent memory issues (keep last 100 conversions)
+  if (conversionCache.size > 100) {
+    const firstKey = conversionCache.keys().next().value;
+    conversionCache.delete(firstKey);
+  }
+
+  return result;
 }
 
 async function imageToLatex(base64Image) {
@@ -56,6 +81,8 @@ async function imageToLatex(base64Image) {
       ],
       model: "meta-llama/llama-4-maverick-17b-128e-instruct",
       max_tokens: 1000,
+      temperature: 0, // Deterministic output
+      seed: 42, // Consistent seed for reproducibility
     });
     return response.choices[0]?.message?.content || "";
   } catch (error) {
