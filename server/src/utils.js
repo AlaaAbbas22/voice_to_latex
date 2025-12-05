@@ -31,12 +31,21 @@ async function llmResponse(message) {
   // Check cache first for deterministic responses
   const cacheKey = message.trim();
   if (conversionCache.has(cacheKey)) {
-    console.log("Cache hit for:", cacheKey.substring(0, 50));
     return conversionCache.get(cacheKey);
   }
 
   const response = await getGroqChatCompletion(
-    `Convert this text to latex. Return the plain inner latex code only and make sure to break the line using double backslash wherever it is broken in the input. ONLY CONVERT THE GIVEN TEXT TO LATEX AND DO NOT ADD ANYTHING TO THE CONTENT AND MAKE SURE THE LATEX IS NOT SURROUNDED BY A SINGLE DOLLAR SIGN with a space before the dollar sign. If there is no meaningful content to convert, return an empty string. \n${message}`,
+    `Convert this text to latex. Follow these rules strictly:
+1. Try to convert natural language descriptions into mathematical symbols and formulas whenever possible (e.g., "square root of x" → "\\sqrt{x}", "alpha" → "\\alpha")
+2. If there is plain text that cannot be converted to mathematical symbols, wrap it in \\text{} to prevent it from being stuck together (e.g., "Let x equal" → "\\text{Let } x \\text{ equal}")
+3. Return the plain inner latex code only
+4. Break lines using double backslash (\\\\) wherever there is a line break in the input
+5. DO NOT surround the output with dollar signs
+6. DO NOT add any content that is not in the input
+7. If there is no meaningful content to convert, return an empty string
+
+Input text:
+${message}`,
     { temperature: 0, seed: 42 } // Deterministic settings
   );
 
