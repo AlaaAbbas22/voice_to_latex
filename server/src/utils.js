@@ -77,7 +77,7 @@ async function imageToLatex(base64Image) {
           content: [
             {
               type: "text",
-              text: "Convert this handwritten mathematical image to LaTeX code. Focus on accurately converting any handwritten equations, formulas, or mathematical notation to proper LaTeX syntax. DO NOT use TikZ or tikzpicture environment. DO NOT use any unknown environments. If there are diagrams, describe them in plain text within the LaTeX. Return ONLY the inner LaTeX code without any surrounding dollar signs, explanation, or markdown formatting. If the image is blank, empty, or contains no mathematical content, return an empty string.",
+              text: 'Convert this handwritten mathematical image to LaTeX code. Follow these rules strictly:\n1. Focus on accurately converting any handwritten equations, formulas, or mathematical notation to proper LaTeX syntax.\n2. If there is plain text that cannot be converted to mathematical symbols, wrap it in \\text{} to prevent it from being stuck together (e.g., "Let x equal" → "\\text{Let } x \\text{ equal}").\n3. DO NOT use TikZ or tikzpicture environment. DO NOT use any unknown environments.\n4. If there are diagrams, describe them in plain text within \\text{} in the LaTeX.\n5. Return ONLY the inner LaTeX code without any surrounding dollar signs, explanation, or markdown formatting.\n6. If the image is blank, empty, or contains no mathematical content, return an empty string.',
             },
             {
               type: "image_url",
