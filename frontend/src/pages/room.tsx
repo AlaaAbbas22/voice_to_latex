@@ -9,10 +9,10 @@ import Content from "@/components/Content";
 import axios from "axios";
 import { getCookie } from "cookies-next";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronLeft, ChevronRight, Loader2, Menu, Users } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Loader2 } from "lucide-react";
 import { toast } from "react-hot-toast";
 import Head from "next/head";
+import { HighContrastProvider, useHighContrast } from "@/contexts/HighContrastContext";
 
 export default function Room() {
   const [connected, setConnected] = useState(false);
@@ -145,68 +145,123 @@ export default function Room() {
       <Head>
         <title>{roomName ? `Vatex - ${roomName}` : "Vatex Room"}</title>
       </Head>
-
-      <div className="flex flex-col h-screen w-screen bg-gray-50 overflow-hidden">
-        <Header
+      <HighContrastProvider>
+        <RoomLayout
           roomName={roomName}
           roomId={roomId}
           role={role}
           showSidebar={showSidebar}
-          onToggleSidebar={toggleSidebar}
+          setShowSidebar={setShowSidebar}
+          toggleSidebar={toggleSidebar}
           onRoomNameUpdate={handleRoomNameUpdate}
+          connected={connected}
+          text={text}
+          setText={setText}
+          socket={socket}
+          latex={latex}
+          router={router}
         />
+      </HighContrastProvider>
+    </>
+  );
+}
 
-        <div className="flex flex-1 h-full w-full relative overflow-hidden">
-          {/* Backdrop overlay */}
-          <AnimatePresence>
-            {showSidebar && (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.2 }}
-                className="absolute inset-0 bg-black/50 z-30"
-                onClick={() => setShowSidebar(false)}
-              />
-            )}
-          </AnimatePresence>
+interface RoomLayoutProps {
+  roomName: string;
+  roomId: string;
+  role: string;
+  showSidebar: boolean;
+  setShowSidebar: (v: boolean) => void;
+  toggleSidebar: () => void;
+  onRoomNameUpdate: (name: string) => void;
+  connected: boolean;
+  text: string;
+  setText: React.Dispatch<React.SetStateAction<string>>;
+  socket: Socket<DefaultEventsMap, DefaultEventsMap> | null;
+  latex: string;
+  router: ReturnType<typeof useRouter>;
+}
 
-          {/* Sidebar overlay */}
-          <AnimatePresence>
-            {showSidebar && (
-              <motion.div
-                initial={{ x: -320 }}
-                animate={{ x: 0 }}
-                exit={{ x: -320 }}
-                transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                className="h-full w-80 absolute left-0 top-0 z-40 shadow-2xl"
-              >
-                <Sidebar
-                  connected={connected}
-                  role={role}
-                  onClose={() => setShowSidebar(false)}
-                />
-              </motion.div>
-            )}
-          </AnimatePresence>
+function RoomLayout({
+  roomName,
+  roomId,
+  role,
+  showSidebar,
+  setShowSidebar,
+  toggleSidebar,
+  onRoomNameUpdate,
+  connected,
+  text,
+  setText,
+  socket,
+  latex,
+  router,
+}: RoomLayoutProps) {
+  const { isHighContrast } = useHighContrast();
 
-          {/* Main content - always full width */}
-          <div className="flex-1 flex flex-col w-full">
-            <div className="flex-1 p-4 md:p-8">
-              <Content
-                text={text}
-                setText={setText}
-                socket={socket}
-                router={router}
-                latex={latex}
+  return (
+    <div
+      className="room-layout flex flex-col h-screen w-screen bg-gray-50 overflow-hidden"
+      data-high-contrast={isHighContrast ? "true" : undefined}
+      role="main"
+      aria-label="Room"
+    >
+      <Header
+        roomName={roomName}
+        roomId={roomId}
+        role={role}
+        showSidebar={showSidebar}
+        onToggleSidebar={toggleSidebar}
+        onRoomNameUpdate={onRoomNameUpdate}
+      />
+
+      <div className="flex flex-1 h-full w-full relative overflow-hidden">
+        <AnimatePresence>
+          {showSidebar && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="absolute inset-0 bg-black/50 z-30"
+              onClick={() => setShowSidebar(false)}
+            />
+          )}
+        </AnimatePresence>
+
+        <AnimatePresence>
+          {showSidebar && (
+            <motion.div
+              initial={{ x: -320 }}
+              animate={{ x: 0 }}
+              exit={{ x: -320 }}
+              transition={{ type: "spring", stiffness: 300, damping: 30 }}
+              className="h-full w-80 absolute left-0 top-0 z-40 shadow-2xl"
+            >
+              <Sidebar
+                connected={connected}
                 role={role}
+                onClose={() => setShowSidebar(false)}
               />
-            </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        <div className="room-main flex-1 flex flex-col w-full">
+          <div className="flex-1 p-4 md:p-8">
+            <Content
+              text={text}
+              setText={setText}
+              socket={socket}
+              router={router}
+              latex={latex}
+              role={role}
+            />
           </div>
         </div>
-
-        <Footer />
       </div>
-    </>
+
+      <Footer />
+    </div>
   );
 }

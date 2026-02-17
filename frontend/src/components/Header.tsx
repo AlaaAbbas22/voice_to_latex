@@ -3,7 +3,8 @@ import { getCookie } from "cookies-next";
 import { useRouter } from "next/router";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Home, Edit2, Check, X, Menu, Users } from "lucide-react";
+import { Home, Edit2, Check, X, Menu, Users, Contrast } from "lucide-react";
+import { useHighContrastOptional } from "@/contexts/HighContrastContext";
 import axios from "axios";
 import toast from "react-hot-toast";
 import { motion } from "framer-motion";
@@ -70,9 +71,10 @@ export default function Header({ roomName, roomId, role, onRoomNameUpdate, showS
   };
 
   const canEdit = role === "editor";
+  const highContrast = useHighContrastOptional();
 
   return (
-    <div className="bg-white border-b border-gray-200 py-3 px-4 flex items-center justify-between shadow-sm">
+    <div className="room-header bg-white border-b border-gray-200 py-3 px-4 flex items-center justify-between shadow-sm">
       <div className="flex items-center gap-2">
         {/* Menu Toggle Button */}
         {onToggleSidebar && (
@@ -105,6 +107,24 @@ export default function Header({ roomName, roomId, role, onRoomNameUpdate, showS
           <Home className="h-4 w-4" />
           <span className="hidden sm:inline">Dashboard</span>
         </Button>
+
+        {highContrast && (
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={highContrast.toggleHighContrast}
+            className="high-contrast-toggle flex items-center gap-2 min-w-[44px] min-h-[44px] sm:min-w-0 sm:min-h-0 border-2 border-gray-800 bg-gray-900 text-white hover:bg-gray-800 hover:text-white focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-gray-900"
+            aria-pressed={highContrast.isHighContrast}
+            aria-label={highContrast.isHighContrast ? "Turn off high contrast mode" : "Turn on high contrast mode for better visibility"}
+            title={highContrast.isHighContrast ? "High contrast on (click to turn off)" : "High contrast off (click to turn on)"}
+          >
+            <Contrast className="h-5 w-5 shrink-0" aria-hidden />
+            <span className="hidden sm:inline">
+              {highContrast.isHighContrast ? "High contrast on" : "High contrast"}
+            </span>
+          </Button>
+        )}
       </div>
 
       <div className="flex items-center gap-3">
