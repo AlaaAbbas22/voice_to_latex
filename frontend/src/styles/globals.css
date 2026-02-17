@@ -79,3 +79,100 @@
   width: 100%;
   height: 100%;
 }
+
+/* High contrast mode – room layout (accessibility, dark) */
+.room-layout[data-high-contrast="true"] {
+  --hc-bg: #0a0a0a;
+  --hc-fg: #ffffff;
+  --hc-border: #ffffff;
+  --hc-border-width: 2px;
+  --hc-focus: #ffffff;
+  --hc-accent-bg: #ffffff;
+  --hc-accent-fg: #0a0a0a;
+  background: var(--hc-bg) !important;
+  color: var(--hc-fg) !important;
+}
+
+.room-layout[data-high-contrast="true"] .room-header {
+  background: var(--hc-bg) !important;
+  color: var(--hc-fg) !important;
+  border-bottom: var(--hc-border-width) solid var(--hc-border) !important;
+  box-shadow: none !important;
+}
+
+.room-layout[data-high-contrast="true"] .room-header h1,
+.room-layout[data-high-contrast="true"] .room-header p {
+  color: var(--hc-fg) !important;
+}
+
+.room-layout[data-high-contrast="true"] .room-header input {
+  background: var(--hc-bg) !important;
+  color: var(--hc-fg) !important;
+  border: var(--hc-border-width) solid var(--hc-border) !important;
+  outline: var(--hc-border-width) solid var(--hc-focus);
+}
+
+.room-layout[data-high-contrast="true"] .room-main {
+  background: var(--hc-bg) !important;
+  color: var(--hc-fg) !important;
+}
+
+.room-layout[data-high-contrast="true"] .room-footer {
+  background: var(--hc-bg) !important;
+  color: var(--hc-fg) !important;
+  border-top: var(--hc-border-width) solid var(--hc-border) !important;
+}
+
+.room-layout[data-high-contrast="true"] .room-header button,
+.room-layout[data-high-contrast="true"] .room-main button,
+.room-layout[data-high-contrast="true"] .room-footer button {
+  border: var(--hc-border-width) solid var(--hc-border) !important;
+  color: var(--hc-fg) !important;
+  background: var(--hc-bg) !important;
+}
+
+.room-layout[data-high-contrast="true"] .room-header button:focus-visible,
+.room-layout[data-high-contrast="true"] .room-main button:focus-visible,
+.room-layout[data-high-contrast="true"] .room-footer button:focus-visible {
+  outline: var(--hc-border-width) solid var(--hc-focus) !important;
+  outline-offset: 2px !important;
+}
+
+.room-layout[data-high-contrast="true"] .room-header .high-contrast-toggle {
+  border: var(--hc-border-width) solid var(--hc-border) !important;
+  background: var(--hc-accent-bg) !important;
+  color: var(--hc-accent-fg) !important;
+}
+
+.room-layout[data-high-contrast="true"] .room-header .high-contrast-toggle:focus-visible {
+  outline: var(--hc-border-width) solid var(--hc-accent-fg) !important;
+  outline-offset: 2px !important;
+}
+
+.room-layout[data-high-contrast="true"] .room-main textarea,
+.room-layout[data-high-contrast="true"] .room-main input,
+.room-layout[data-high-contrast="true"] .room-main [role="textbox"] {
+  background: var(--hc-bg) !important;
+  color: var(--hc-fg) !important;
+  border: var(--hc-border-width) solid var(--hc-border) !important;
+}
+
+.room-layout[data-high-contrast="true"] .room-main textarea:focus,
+.room-layout[data-high-contrast="true"] .room-main input:focus,
+.room-layout[data-high-contrast="true"] .room-main [role="textbox"]:focus {
+  outline: var(--hc-border-width) solid var(--hc-focus) !important;
+  outline-offset: 1px !important;
+}
+
+/* LaTeX editor & preview panels – dark bg in high contrast */
+.room-layout[data-high-contrast="true"] .room-main .bg-card,
+.room-layout[data-high-contrast="true"] .room-main .bg-white {
+  background: var(--hc-bg) !important;
+  color: var(--hc-fg) !important;
+  border-color: var(--hc-border) !important;
+}
+
+.room-layout[data-high-contrast="true"] .room-main [class*="text-card-foreground"],
+.room-layout[data-high-contrast="true"] .room-main .text-muted-foreground {
+  color: var(--hc-fg) !important;
+}

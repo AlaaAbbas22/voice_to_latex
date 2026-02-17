@@ -9,6 +9,7 @@ import {
 } from "../ui/card";
 import { Copy, Download } from "lucide-react";
 import LatexDisplayer from "../Latex";
+import { useHighContrastOptional } from "@/contexts/HighContrastContext";
 
 interface LaTeXPreviewPanelProps {
     latex: string;
@@ -23,6 +24,9 @@ export const LaTeXPreviewPanel = ({
     onDownloadPDF,
     description = "Rendered output of your LaTeX equations",
 }: LaTeXPreviewPanelProps) => {
+    const highContrast = useHighContrastOptional();
+    const isHighContrast = highContrast?.isHighContrast ?? false;
+
     return (
         <Card className="h-full flex flex-col">
             <CardHeader className="pb-2">
@@ -31,7 +35,7 @@ export const LaTeXPreviewPanel = ({
             </CardHeader>
             <CardContent className="flex-1 flex flex-col">
                 <div className="flex-1 bg-white p-6 rounded-md border overflow-auto">
-                    <LatexDisplayer latex={latex} />
+                    <LatexDisplayer latex={latex} highContrast={isHighContrast} />
                 </div>
 
                 <div className="flex flex-wrap gap-2 mt-4">

@@ -3,9 +3,10 @@ import { formatLatex } from "@/lib/utils";
 
 interface LatexDisplayerProps {
   latex: string;
+  highContrast?: boolean;
 }
 
-const LatexDisplayer: React.FC<LatexDisplayerProps> = ({ latex }) => {
+const LatexDisplayer: React.FC<LatexDisplayerProps> = ({ latex, highContrast = false }) => {
   const iframeRef = useRef<HTMLIFrameElement>(null);
 
   useEffect(() => {
@@ -16,6 +17,16 @@ const LatexDisplayer: React.FC<LatexDisplayerProps> = ({ latex }) => {
 
     const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
     if (!iframeDoc) return;
+
+    const highContrastStyles = highContrast
+      ? `
+      body { background: #0a0a0a !important; color: #ffffff !important; }
+      body *, .math-content, .math-content * { color: #ffffff !important; }
+      .mjx-chtml, .mjx-chtml *, .MathJax * { color: #ffffff !important; fill: #ffffff !important; }
+      svg *, [fill] { fill: #ffffff !important; }
+      [stroke] { stroke: #ffffff !important; }
+      `
+      : "";
 
     iframeDoc.open();
     iframeDoc.write(`
@@ -37,6 +48,7 @@ const LatexDisplayer: React.FC<LatexDisplayerProps> = ({ latex }) => {
               text-align: center;
               min-height: 50px;
             }
+            ${highContrastStyles}
           </style>
         </head>
         <body>
@@ -60,7 +72,7 @@ const LatexDisplayer: React.FC<LatexDisplayerProps> = ({ latex }) => {
       </html>
     `);
     iframeDoc.close();
-  }, [latex]);
+  }, [latex, highContrast]);
 
   return (
     <iframe
