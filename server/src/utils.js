@@ -88,7 +88,7 @@ async function imageToLatex(base64Image) {
           ],
         },
       ],
-      model: "openai/gpt-oss-120b",
+      model: "meta-llama/llama-4-scout-17b-16e-instruct",
       max_tokens: 1000,
       temperature: 0, // Deterministic output
       seed: 42, // Consistent seed for reproducibility
